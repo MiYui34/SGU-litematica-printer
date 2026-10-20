@@ -1,0 +1,29 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "me.aleksilassila.litematica.printer.mixin",
+  "plugin": "me.aleksilassila.litematica.printer.mixin_plugin.ChestTrackerMixinConfigPlugin",
+  "compatibilityLevel": "${compatibility_level}",
+  "mixins": [
+    "printer.mc.MixinBlockItem",
+    "printer.mc.MixinConnection",
+    "printer.mc.MixinServerboundMovePlayerPacket"
+  ],
+  "client": [
+    "MixinClientPacketListener",
+    "MixinContainerScreenGuard",
+    "MixinMinecraftManualUse",
+    "MixinMinecraftMiningInput",
+    "MixinMinecraftPickBlock",
+    ${beacon_client_mixins}
+    "printer.mc.MixinClientLevel",
+    "printer.mc.MixinClientPacketListener",
+    "printer.mc.MixinGui",
+    "printer.mc.MixinLocalPlayer",
+    ${chesttracker_client_mixins}
+    "printer.mc.MixinMultiPlayerGameMode"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
