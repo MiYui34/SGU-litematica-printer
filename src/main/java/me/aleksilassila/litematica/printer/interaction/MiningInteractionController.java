@@ -1,6 +1,6 @@
 package me.aleksilassila.litematica.printer.interaction;
 
-import me.aleksilassila.litematica.printer.handler.handlers.MineDebugLog;
+import me.aleksilassila.litematica.printer.utils.PrinterDebugLog;
 import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.mixin_extension.BlockBreakResult;
 import me.aleksilassila.litematica.printer.utils.minecraft.NetworkUtils;
@@ -220,11 +220,11 @@ public final class MiningInteractionController {
             this.feedback.flushPendingBreakSound(pos);
             this.feedback.removePending(pos);
             this.feedback.resetHitSound();
-            MineDebugLog.write("mine break completed pos=" + MineDebugLog.pos(pos) + " path=air_or_liquid");
+            PrinterDebugLog.write("mine break completed pos=" + PrinterDebugLog.pos(pos) + " path=air_or_liquid");
             return BlockBreakResult.COMPLETED;
         }
         if (!level.getWorldBorder().isWithinBounds(pos)) {
-            MineDebugLog.write("mine break failed pos=" + MineDebugLog.pos(pos) + " reason=out_of_world_border");
+            PrinterDebugLog.write("mine break failed pos=" + PrinterDebugLog.pos(pos) + " reason=out_of_world_border");
             return BlockBreakResult.FAILED;
         }
         if (player.getAbilities().instabuild) {
@@ -357,7 +357,7 @@ public final class MiningInteractionController {
         BlockPos previous = this.port.destroyPos();
         this.feedback.clearPendingBreakSound(previous);
         NetworkUtils.sendPacket(this.port.actionPacket(Action.ABORT_DESTROY_BLOCK, previous, direction, 0));
-        MineDebugLog.write("mine break abort previous=" + MineDebugLog.pos(previous) + " next=" + MineDebugLog.pos(next));
+        PrinterDebugLog.write("mine break abort previous=" + PrinterDebugLog.pos(previous) + " next=" + PrinterDebugLog.pos(next));
         this.resetDestroyState(player, previous);
         this.feedback.resetHitSound();
     }
@@ -389,7 +389,7 @@ public final class MiningInteractionController {
     private void logProgress(BlockPos pos) {
         long tick = this.clientTick();
         if (!pos.equals(this.lastLoggedProgressPos) || tick - this.lastLoggedProgressTick >= 10) {
-            MineDebugLog.write("mine break in_progress pos=" + MineDebugLog.pos(pos)
+            PrinterDebugLog.write("mine break in_progress pos=" + PrinterDebugLog.pos(pos)
                     + " progress=" + this.port.destroyProgress());
             this.lastLoggedProgressPos = pos;
             this.lastLoggedProgressTick = tick;

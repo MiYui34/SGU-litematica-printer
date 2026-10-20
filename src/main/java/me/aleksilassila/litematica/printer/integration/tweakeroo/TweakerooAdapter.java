@@ -98,17 +98,4 @@ public final class TweakerooAdapter implements TweakerooToolSwitchPort {
         );
     }
 
-    public boolean allowsConfiguredBreak(BlockState state) {
-        Object optionListValue = Configs.Mine.EXCAVATE_LIMIT.getOptionListValue();
-        UsageRestriction.ListType listType = optionListValue instanceof UsageRestriction.ListType type
-                ? type
-                : UsageRestriction.ListType.NONE;
-        return this.restrictionCache.allows(
-                "custom",
-                listType,
-                Configs.Mine.EXCAVATE_BLACKLIST.getStrings(),
-                Configs.Mine.EXCAVATE_WHITELIST.getStrings(),
-                state
-        );
-    }
 }

@@ -5,7 +5,6 @@ import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeComponent;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeEvent;
 import me.aleksilassila.litematica.printer.handler.handlers.GuiHandler;
-import me.aleksilassila.litematica.printer.handler.handlers.MineDebugLog;
 import me.aleksilassila.litematica.printer.core.action.ResourceLease;
 import net.minecraft.client.Minecraft;
 import me.aleksilassila.litematica.printer.runtime.PrinterRuntime;
@@ -17,7 +16,6 @@ final class TickScheduler implements RuntimeComponent {
     private int packetTick;
     private String lastPauseReason;
     private boolean runtimeActive;
-    private int executionScopeHash = Integer.MIN_VALUE;
     private int roundRobinOffset;
 
     TickScheduler(ImmutableList<FeatureModuleBase> modules, PrinterRuntime runtime) {
@@ -42,16 +40,8 @@ final class TickScheduler implements RuntimeComponent {
             this.lastPauseReason = null;
             return;
         }
-        int currentScopeHash = this.currentExecutionScopeHash();
-        if (!this.runtimeActive) {
-            this.runtimeActive = true;
-            this.executionScopeHash = currentScopeHash;
-        } else if (this.executionScopeHash != currentScopeHash) {
-            this.runtime.reset("execution_scope_changed");
-            this.runtimeActive = true;
-            this.executionScopeHash = currentScopeHash;
-            return;
-        }
+        this.runtimeActive = true;
+
         boolean lagPaused = this.pauseForLagCheck();
         boolean inventoryBusy = !lagPaused && this.pauseForInventoryState("shared_precheck");
         if (!lagPaused && !inventoryBusy) {
@@ -100,7 +90,6 @@ final class TickScheduler implements RuntimeComponent {
         this.packetTick = 0;
         this.lastPauseReason = null;
         this.runtimeActive = false;
-        this.executionScopeHash = Integer.MIN_VALUE;
         this.roundRobinOffset = 0;
     }
 
@@ -114,17 +103,11 @@ final class TickScheduler implements RuntimeComponent {
     }
 
     private void pause(String reason) {
-        if (!reason.equals(this.lastPauseReason)) {
-            MineDebugLog.write("scheduler pause reason=" + reason + " packetTick=" + this.packetTick);
-            this.lastPauseReason = reason;
-        }
+        this.lastPauseReason = reason;
     }
 
     private void resume() {
-        if (this.lastPauseReason != null) {
-            MineDebugLog.write("scheduler resume after=" + this.lastPauseReason + " packetTick=" + this.packetTick);
-            this.lastPauseReason = null;
-        }
+        this.lastPauseReason = null;
     }
 
     private boolean pauseForInventoryState(String reasonPrefix) {
@@ -173,15 +156,5 @@ final class TickScheduler implements RuntimeComponent {
         return false;
     }
 
-    private int currentExecutionScopeHash() {
-        int result = Configs.Core.WORK_MODE.getOptionListValue().hashCode();
-        result = 31 * result + Configs.Core.WORK_MODE_TYPE.getOptionListValue().hashCode();
-        result = 31 * result + Boolean.hashCode(Configs.Core.PRINT.getBooleanValue());
-        result = 31 * result + Boolean.hashCode(Configs.Core.MINE.getBooleanValue());
-        result = 31 * result + Boolean.hashCode(Configs.Core.FILL.getBooleanValue());
-        result = 31 * result + Boolean.hashCode(Configs.Core.FLUID.getBooleanValue());
-        result = 31 * result + Boolean.hashCode(Configs.Core.COVER.getBooleanValue());
-        result = 31 * result + Boolean.hashCode(Configs.Hotkeys.BEDROCK.getBooleanValue());
-        return result;
-    }
+
 }

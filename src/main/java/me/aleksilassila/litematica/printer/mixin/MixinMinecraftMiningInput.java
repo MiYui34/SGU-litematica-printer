@@ -16,8 +16,7 @@ public class MixinMinecraftMiningInput {
             target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;stopDestroyBlock()V"), cancellable = true)
     private void preservePrinterMining(boolean attack, CallbackInfo ci) {
         if (!attack && Configs.Core.WORK_SWITCH.getBooleanValue()
-                && (RuntimeAccess.get().modules().mine().shouldKeepMiningOnIdleInput()
-                    || RuntimeAccess.get().modules().print().shouldKeepMiningOnIdleInput())) {
+                && RuntimeAccess.get().modules().print().shouldKeepMiningOnIdleInput()) {
             ci.cancel();
         }
     }

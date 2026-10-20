@@ -3,7 +3,6 @@ package me.aleksilassila.litematica.printer.handler.handlers;
 import com.google.common.collect.Iterables;
 import fi.dy.masa.litematica.world.WorldSchematic;
 import me.aleksilassila.litematica.printer.config.Configs;
-import me.aleksilassila.litematica.printer.enums.PrintModeType;
 import me.aleksilassila.litematica.printer.interaction.MiningInteractionPort;
 import me.aleksilassila.litematica.printer.guide.Guides;
 import me.aleksilassila.litematica.printer.handler.HudStatsManager;
@@ -50,7 +49,7 @@ public class PrintHandler extends FeatureModuleBase {
     private int observedActionConfigHash = Integer.MIN_VALUE;
 
     public PrintHandler(PrinterRuntime runtime) {
-        super(runtime, NAME, PrintModeType.PRINTER, Configs.Core.PRINT, Configs.Print.PRINT_SELECTION_TYPE, true);
+        super(runtime, NAME, null, null, Configs.Print.PRINT_SELECTION_TYPE, true);
         this.printTasks = new PrintWorkflowScheduler(runtime::currentTick, runtime.strippableBlocks());
         runtime.events().subscribe(event -> {
             if (event instanceof RuntimeEvent.BlockUpdated update) {
@@ -78,7 +77,7 @@ public class PrintHandler extends FeatureModuleBase {
     }
 
     public boolean shouldKeepMiningOnIdleInput() {
-        return ConfigUtils.isEnable() && ConfigUtils.isPrintMode()
+        return ConfigUtils.isEnable()
                 && this.mc != null && this.level != null && this.player != null && this.connection != null
                 && this.mc.level == this.level && this.mc.player == this.player
                 && this.mc.getConnection() == this.connection && this.mc.gameMode == this.gameMode

@@ -2,12 +2,11 @@ package me.aleksilassila.litematica.printer.render;
 
 import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.enums.ScanState;
-import me.aleksilassila.litematica.printer.enums.WorkingModeType;
+
 import me.aleksilassila.litematica.printer.handler.HudStatsManager;
 import me.aleksilassila.litematica.printer.handler.HudStatus;
 import me.aleksilassila.litematica.printer.handler.FeatureModuleBase;
-import me.aleksilassila.litematica.printer.handler.handlers.bedrock.BedrockController;
-import me.aleksilassila.litematica.printer.handler.handlers.bedrock.BedrockEngine;
+
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
 import me.aleksilassila.litematica.printer.utils.ConfigUtils;
 import me.aleksilassila.litematica.printer.utils.minecraft.StringUtils;
@@ -254,9 +253,7 @@ public class Render2D {
     private List<HudLine> buildHudSummaryLines() {
         List<HudLine> lines = new ArrayList<>();
         boolean enabled = ConfigUtils.isEnable();
-        String workMode = ((WorkingModeType) Configs.Core.WORK_MODE.getOptionListValue()).equals(WorkingModeType.SINGLE)
-                ? hud("mode.single") : hud("mode.multi");
-        lines.add(new HudLine(hud("summary.work", enabled ? hud("state.running") : hud("state.closed"), workMode, getActiveModeSummary()), new Color(255, 255, 255, 255)));
+        lines.add(new HudLine(hud("summary.work", enabled ? hud("state.running") : hud("state.closed"), getActiveModeSummary()), new Color(255, 255, 255, 255)));
 
         String pauseReason = RuntimeAccess.get().modules().lastPauseReason();
         if (!enabled) {
@@ -271,12 +268,7 @@ public class Render2D {
 
     private List<HudLine> buildHudModeLines() {
         List<HudLine> lines = new ArrayList<>();
-        appendCommonModeLines(lines, HudStatsManager.Mode.PRINT, getModeDisplayName(HudStatsManager.Mode.PRINT), ConfigUtils.isPrintMode());
-        appendCommonModeLines(lines, HudStatsManager.Mode.MINE, getModeDisplayName(HudStatsManager.Mode.MINE), ConfigUtils.isMineMode());
-        appendCommonModeLines(lines, HudStatsManager.Mode.FILL, getModeDisplayName(HudStatsManager.Mode.FILL), ConfigUtils.isFillMode());
-        appendCommonModeLines(lines, HudStatsManager.Mode.FLUID, getModeDisplayName(HudStatsManager.Mode.FLUID), ConfigUtils.isFluidMode());
-        appendCommonModeLines(lines, HudStatsManager.Mode.COVER, getModeDisplayName(HudStatsManager.Mode.COVER), ConfigUtils.isCoverMode());
-        appendBedrockLines(lines, ConfigUtils.isBedrockMode());
+        appendCommonModeLines(lines, HudStatsManager.Mode.PRINT, getModeDisplayName(HudStatsManager.Mode.PRINT), ConfigUtils.isEnable());
         return lines;
     }
 
@@ -300,36 +292,6 @@ public class Render2D {
         lines.add(new HudLine(text.toString(), new Color(120, 220, 255, 255)));
     }
 
-    private void appendBedrockLines(List<HudLine> lines, boolean active) {
-        if (!active) {
-            return;
-        }
-        HudStatsManager.Snapshot snapshot = HudStatsManager.getRuntime().snapshot(HudStatsManager.Mode.BEDROCK);
-        BedrockEngine.HudSnapshot bedrock = BedrockController.getHudSnapshot();
-        String progressText = formatProgress(
-                bedrock.confirmedSuccesses(),
-                bedrock.submittedTargets(),
-                bedrock.submittedTargets() > 0
-                        ? (double) bedrock.confirmedSuccesses() / (double) bedrock.submittedTargets()
-                        : 0.0D
-        );
-        int totalFailures = bedrock.failedTargets() + bedrock.stuckTargets();
-        String status = humanizeBedrockReason(bedrock.lastReason());
-        if (bedrock.totalTargets() <= 0 && bedrock.submittedTargets() <= 0 && HudStatus.RUNNING.equals(bedrock.lastReason())) {
-            status = hud("state.no_target");
-        }
-
-        lines.add(new HudLine(hud("bedrock.progress", progressText, formatPercent(bedrock.successRate()), formatRate(snapshot.ratePerSecond())), new Color(120, 255, 170, 255)));
-        lines.add(new HudLine(hud("bedrock.counts", bedrock.confirmedSuccesses(), totalFailures,
-                bedrock.verticalActiveTargets(), bedrock.verticalActiveCap(), bedrock.sideTargets(), bedrock.sideCap(),
-                bedrock.cleanupQueueSize(), bedrock.cleanupPressure()), new Color(255, 255, 255, 255)));
-        lines.add(new HudLine(hud("bedrock.throughput", bedrock.configuredThroughput(), Configs.Bedrock.BEDROCK_INTERVAL.getIntegerValue(),
-                bedrock.acceptedThisTick(), bedrock.submitCap(), bedrock.rejectedThisTick(),
-                formatScanState(RuntimeAccess.get().modules().bedrock()), status), new Color(255, 255, 255, 255)));
-        lines.add(new HudLine(hud("bedrock.network", bedrock.pendingServerUpdates(), bedrock.adaptiveBackoffs(),
-                bedrock.serverUpdateTimeouts(), humanizeBedrockNetworkResult(bedrock.lastNetworkResult())),
-                new Color(255, 230, 150, 255)));
-    }
 
     private void drawProgressBar(int x, int y, int barWidth, int barHeight, double progress,
                                  Color bgColor, Color fgColor) {
@@ -349,36 +311,12 @@ public class Render2D {
         if (!ConfigUtils.isEnable()) {
             return hud("state.none");
         }
-        List<String> names = new ArrayList<>();
-        if (ConfigUtils.isPrintMode()) {
-            names.add(getModeDisplayName(HudStatsManager.Mode.PRINT));
-        }
-        if (ConfigUtils.isMineMode()) {
-            names.add(getModeDisplayName(HudStatsManager.Mode.MINE));
-        }
-        if (ConfigUtils.isFillMode()) {
-            names.add(getModeDisplayName(HudStatsManager.Mode.FILL));
-        }
-        if (ConfigUtils.isFluidMode()) {
-            names.add(getModeDisplayName(HudStatsManager.Mode.FLUID));
-        }
-        if (ConfigUtils.isCoverMode()) {
-            names.add(getModeDisplayName(HudStatsManager.Mode.COVER));
-        }
-        if (ConfigUtils.isBedrockMode()) {
-            names.add(getModeDisplayName(HudStatsManager.Mode.BEDROCK));
-        }
-        return names.isEmpty() ? hud("state.none") : String.join(", ", names);
+        return getModeDisplayName(HudStatsManager.Mode.PRINT);
     }
 
     private String getModeDisplayName(HudStatsManager.Mode mode) {
         return switch (mode) {
             case PRINT -> hud("mode.print");
-            case MINE -> hud("mode.mine");
-            case FILL -> hud("mode.fill");
-            case FLUID -> hud("mode.fluid");
-            case COVER -> hud("mode.cover");
-            case BEDROCK -> hud("mode.bedrock");
             case TOTAL -> hud("mode.total");
         };
     }
@@ -423,26 +361,19 @@ public class Render2D {
     }
 
     private boolean shouldDisplayModeRate(HudStatsManager.Mode mode) {
-        return mode == HudStatsManager.Mode.PRINT
-                || mode == HudStatsManager.Mode.MINE
-                || mode == HudStatsManager.Mode.FILL
-                || mode == HudStatsManager.Mode.FLUID
-                || mode == HudStatsManager.Mode.COVER;
+        return mode == HudStatsManager.Mode.PRINT;
     }
 
     private double getDisplayedModeRate(HudStatsManager.Mode mode, HudStatsManager.Snapshot snapshot) {
         return switch (mode) {
             case PRINT -> snapshot.completedRatePerSecond();
-            case MINE, FILL, FLUID, COVER -> snapshot.completedRatePerSecond();
             default -> 0.0D;
         };
     }
 
     private String getModeRateLabel(HudStatsManager.Mode mode) {
         return switch (mode) {
-            case PRINT, FILL, FLUID, COVER -> hud("metric.place");
-            case MINE -> hud("metric.break");
-            case BEDROCK -> hud("metric.success");
+            case PRINT -> hud("metric.place");
             case TOTAL -> hud("metric.rate_short");
         };
     }
@@ -450,11 +381,6 @@ public class Render2D {
     private FeatureModuleBase getModule(HudStatsManager.Mode mode) {
         return switch (mode) {
             case PRINT -> RuntimeAccess.get().modules().print();
-            case MINE -> RuntimeAccess.get().modules().mine();
-            case FILL -> RuntimeAccess.get().modules().fill();
-            case FLUID -> RuntimeAccess.get().modules().fluid();
-            case COVER -> RuntimeAccess.get().modules().cover();
-            case BEDROCK -> RuntimeAccess.get().modules().bedrock();
             case TOTAL -> null;
         };
     }
@@ -530,18 +456,10 @@ public class Render2D {
 
     private String formatModeSettings(HudStatsManager.Mode mode) {
         return switch (mode) {
-            case PRINT, FILL, FLUID, COVER -> hud("settings.place",
+            case PRINT -> hud("settings.place",
                     Configs.Placement.PLACE_BLOCKS_PER_TICK.getIntegerValue(),
                     hud("settings.interval", Configs.Placement.PLACE_INTERVAL.getIntegerValue()),
                     formatRttSettings(mode));
-            case MINE -> hud("settings.mine",
-                    Configs.Break.BREAK_BLOCKS_PER_TICK.getIntegerValue() == 0
-                            ? hud("settings.unlimited")
-                            : Configs.Break.BREAK_BLOCKS_PER_TICK.getIntegerValue() + "/t",
-                    Configs.Break.BREAK_INTERVAL.getIntegerValue());
-            case BEDROCK -> hud("settings.place",
-                    Configs.Bedrock.BEDROCK_BLOCKS_PER_TICK.getIntegerValue(),
-                    hud("settings.interval", Configs.Bedrock.BEDROCK_INTERVAL.getIntegerValue()), "");
             case TOTAL -> hud("state.unknown_value");
         };
     }
@@ -555,46 +473,7 @@ public class Render2D {
         return hud("settings.rtt", RuntimeAccess.get().rttReplayController().getEstimatedRttMillis(), rate.effectiveIntervalTicks());
     }
 
-    private String humanizeBedrockReason(String reason) {
-        if (reason == null || reason.isBlank()) {
-            return hud("status.running");
-        }
-        return switch (reason) {
-            case "idle" -> hud("status.idle");
-            case "running", "accepted" -> hud("status.running");
-            case "startup_serial" -> hud("status.bedrock.startup_serial");
-            case "accept_backpressure" -> hud("status.bedrock.accept_backpressure");
-            case "submit_cap" -> hud("status.bedrock.submit_cap");
-            case "active_cap" -> hud("status.bedrock.active_cap");
-            case "side_disabled" -> hud("status.bedrock.side_disabled");
-            case "side_lane_busy" -> hud("status.bedrock.side_lane_busy");
-            case "retry_cooldown" -> hud("status.bedrock.retry_cooldown");
-            case "reserved_by_active_target" -> hud("status.bedrock.reserved_by_active_target");
-            case "out_of_range_bedrock", "out_of_range_machine", "out_of_range" -> hud("status.out_of_range");
-            case "await_target_exposure" -> hud("status.bedrock.await_target_exposure");
-            case "duplicate_active_target" -> hud("status.bedrock.duplicate_active_target");
-            case "occupied_by_active_piston" -> hud("status.bedrock.occupied_by_active_piston");
-            case "pending_cleanup" -> hud("status.bedrock.pending_cleanup");
-            case "machine_overlap" -> hud("status.bedrock.machine_overlap");
-            case "target_failed_on_create", "failed" -> hud("status.failed");
-            case "stuck" -> hud("status.bedrock.stuck");
-            default -> hud("status.unknown", reason);
-        };
-    }
 
-    private String humanizeBedrockNetworkResult(String result) {
-        if (result == null || result.isBlank()) {
-            return hud("status.idle");
-        }
-        return switch (result) {
-            case "dispatched" -> hud("network.dispatched");
-            case "confirmed" -> hud("network.confirmed");
-            case "late_update" -> hud("network.late_update");
-            case "retry" -> hud("network.retry");
-            case "stuck" -> hud("network.stuck");
-            default -> hud("status.unknown", result);
-        };
-    }
 
     private static String hud(String key, Object... args) {
         return StringUtils.translatable("litematica-printer.hud." + key, args).getString();

@@ -29,11 +29,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
     private static final String FILE_PATH = "./config/" + Reference.MOD_ID + ".json";
     private static final File CONFIG_DIR = new File("./config");
     private static final int CONFIG_SCHEMA_VERSION = 3;
-    private static final List<String> DEFAULT_COVER_BLOCK_FILTERS = List.of(
-            "#minecraft:carpets",
-            "#minecraft:slabs",
-            "#minecraft:rails"
-    );
 
     private static final KeybindSettings GUI_NO_ORDER = KeybindSettings.create(KeybindSettings.Context.GUI, KeyAction.PRESS, false, false, false, true);
 
@@ -49,11 +44,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
         optionSet.addAll(Break.OPTIONS);          // 破坏
         optionSet.addAll(Hotkeys.OPTIONS);        // 热键
         optionSet.addAll(Print.OPTIONS);          // 打印
-        optionSet.addAll(Mine.OPTIONS);           // 挖掘
-        optionSet.addAll(Fill.OPTIONS);           // 填充
-        optionSet.addAll(Cover.OPTIONS);          // 铺盖
-        optionSet.addAll(Fluid.OPTIONS);          // 排流体
-        optionSet.addAll(Bedrock.OPTIONS);        // 破基岩
         OPTIONS = ImmutableList.copyOf(optionSet);
 
         List<IHotkey> hotkeys = new ArrayList<>();
@@ -66,60 +56,11 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
     }
 
     public static class Core {
-        private static boolean isSingleMode() {
-            return WORK_MODE.getOptionListValue().equals(WorkingModeType.SINGLE);
-        }
-
-        private static boolean isMultiMode() {
-            return WORK_MODE.getOptionListValue().equals(WorkingModeType.MULTI);
-        }
-
         // 打印状态
         public static final ConfigBooleanHotkeyed WORK_SWITCH = booleanHotkey("workingSwitch")
                 .defaultValue(false)
                 .defaultHotkey("CAPS_LOCK")
                 .keybindSettings(KeybindSettings.PRESS_ALLOWEXTRA_EMPTY)
-                .build();
-
-        // 核心 - 模式切换
-        public static final ConfigOptionList WORK_MODE = optionList("modeSwitch")
-                .defaultValue(WorkingModeType.SINGLE)
-                .build();
-
-        // 多模 - 打印
-        public static final ConfigBooleanHotkeyed PRINT = booleanHotkey("print")
-                .defaultValue(false)
-                .setVisible(Core::isMultiMode) // 仅多模式时显示
-                .build();
-
-        // 多模 - 挖掘
-        public static final ConfigBooleanHotkeyed MINE = booleanHotkey("mine")
-                .defaultValue(false)
-                .setVisible(Core::isMultiMode) // 仅多模式时显示
-                .build();
-
-        // 多模 - 填充
-        public static final ConfigBooleanHotkeyed FILL = booleanHotkey("fill")
-                .defaultValue(false)
-                .setVisible(Core::isMultiMode) // 仅多模式时显示
-                .build();
-
-        // 多模 - 排流体
-        public static final ConfigBooleanHotkeyed FLUID = booleanHotkey("fluid")
-                .defaultValue(false)
-                .setVisible(Core::isMultiMode) // 仅多模式时显示
-                .build();
-
-        // 多模 - 铺盖防刷怪
-        public static final ConfigBooleanHotkeyed COVER = booleanHotkey("cover")
-                .defaultValue(false)
-                .setVisible(Core::isMultiMode)
-                .build();
-
-        // 核心 - 单模模式
-        public static final ConfigOptionList WORK_MODE_TYPE = optionList("printerMode")
-                .defaultValue(PrintModeType.PRINTER)
-                .setVisible(Core::isSingleMode) // 仅单模式时显示
                 .build();
 
         // 核心 - 工作半径
@@ -200,13 +141,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
         // 通用配置项列表（按功能分类排序）
         public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
                 WORK_SWITCH,
-                WORK_MODE,
-                WORK_MODE_TYPE,
-                PRINT,
-                MINE,
-                FILL,
-                FLUID,
-                COVER,
                 WORK_RANGE,
                 SCAN_TIME_BUDGET_MS,
                 LAZY_ENTER_TICKS,
@@ -430,37 +364,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
         );
     }
 
-    public static class Bedrock {
-        public static final ConfigInteger BEDROCK_INTERVAL = integer("bedrockInterval")
-                .defaultValue(2)
-                .range(1, 20)
-                .build();
-
-        public static final ConfigInteger BEDROCK_BLOCKS_PER_TICK = integer("bedrockBlocksPerTick")
-                .defaultValue(6)
-                .range(1, 8)
-                .build();
-
-        public static final ConfigBoolean BEDROCK_ALLOW_SIDE = bool("bedrockAllowSide")
-                .defaultValue(false)
-                .build();
-
-        public static final ConfigBoolean BEDROCK_MULTIPLAYER_ADAPTIVE = bool("bedrockMultiplayerAdaptive")
-                .defaultValue(true)
-                .build();
-
-        public static final ConfigStringList BEDROCK_WHITELIST = stringList("bedrockWhitelist")
-                .build();
-
-        public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
-                BEDROCK_INTERVAL,
-                BEDROCK_BLOCKS_PER_TICK,
-                BEDROCK_ALLOW_SIDE,
-                BEDROCK_MULTIPLAYER_ADAPTIVE,
-                BEDROCK_WHITELIST
-        );
-    }
-
     public static class Print {
         // 选区类型
         public static final ConfigOptionList PRINT_SELECTION_TYPE = optionList("printSelectionType")
@@ -625,156 +528,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
         );
     }
 
-    public static class Mine {
-        private static boolean isCustom() {
-            return EXCAVATE_LIMITER.getOptionListValue().equals(ExcavateListMode.CUSTOM);
-        }
-
-        private static boolean isWhitelist() {
-            return isCustom() && EXCAVATE_LIMIT.getOptionListValue().equals(UsageRestriction.ListType.WHITELIST);
-        }
-
-        private static boolean isBlacklist() {
-            return isCustom() && EXCAVATE_LIMIT.getOptionListValue().equals(UsageRestriction.ListType.BLACKLIST);
-        }
-
-        // 选区类型
-        public static final ConfigOptionList MINE_SELECTION_TYPE = optionList("mineSelectionType")
-                .defaultValue(SelectionType.LITEMATICA_SELECTION)
-                .build();
-
-        public static final ConfigBoolean MINE_TRENCH_MODE = bool("mineTrenchMode")
-                .defaultValue(false)
-                .build();
-
-        public static final ConfigStringList MINE_TRENCH_FILL_BLOCK_LIST = stringList("mineTrenchFillBlockList")
-                .defaultValue(Blocks.SAND)
-                .setVisible(MINE_TRENCH_MODE::getBooleanValue)
-                .build();
-
-        // 挖掘模式限制器
-        public static final ConfigOptionList EXCAVATE_LIMITER = optionList("excavateLimiter")
-                .defaultValue(ExcavateListMode.CUSTOM)
-                .build();
-
-        // 挖掘模式限制
-        public static final ConfigOptionList EXCAVATE_LIMIT = optionList("excavateLimit")
-                .defaultValue(UsageRestriction.ListType.NONE)
-                .setVisible(Mine::isCustom)
-                .build();
-
-        // 挖掘白名单
-        public static final ConfigStringList EXCAVATE_WHITELIST = stringList("excavateWhitelist")
-                .setVisible(Mine::isWhitelist)
-                .build();
-
-        // 挖掘黑名单
-        public static final ConfigStringList EXCAVATE_BLACKLIST = stringList("excavateBlacklist")
-                .setVisible(Mine::isBlacklist)
-                .build();
-
-        public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
-                MINE_SELECTION_TYPE,          // 挖掘 - 选区类型
-                MINE_TRENCH_MODE,             // 挖掘 - 挖沟模式
-                MINE_TRENCH_FILL_BLOCK_LIST,  // 挖掘 - 挖沟填充方块
-                EXCAVATE_LIMITER,             // 挖掘 - 挖掘模式限制器
-                EXCAVATE_LIMIT,               // 挖掘 - 挖掘模式限制
-                EXCAVATE_WHITELIST,           // 挖掘 - 挖掘白名单
-                EXCAVATE_BLACKLIST            // 挖掘 - 挖掘黑名单
-        );
-    }
-
-    public static class Fill {
-        private static boolean isBlocklist() {
-            return FILL_BLOCK_MODE.getOptionListValue().equals(FillBlockModeType.BLOCKLIST);
-        }
-
-        // 选区类型
-        public static final ConfigOptionList FILL_SELECTION_TYPE = optionList("fillSelectionType")
-                .defaultValue(SelectionType.LITEMATICA_SELECTION)
-                .build();
-
-        // 填充方块模式
-        public static final ConfigOptionList FILL_BLOCK_MODE = optionList("fillBlockMode")
-                .defaultValue(FillBlockModeType.BLOCKLIST)
-                .build();
-
-        // 填充方块名单
-        public static final ConfigStringList FILL_BLOCK_LIST = stringList("fillBlockList")
-                .defaultValue(Blocks.COBBLESTONE)
-                .setVisible(Fill::isBlocklist)
-                .build();
-
-        // 模式朝向
-        public static final ConfigOptionList FILL_BLOCK_FACING = optionList("fillModeFacing")
-                .defaultValue(FillModeFacingType.NONE)
-                .build();
-
-        public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
-                FILL_SELECTION_TYPE,          // 填充 - 选区类型
-                FILL_BLOCK_MODE,              // 填充 - 填充方块模式
-                FILL_BLOCK_LIST,              // 填充 - 填充方块名单
-                FILL_BLOCK_FACING             // 填充 - 模式朝向
-        );
-    }
-
-    public static class Cover {
-        private static boolean isBlocklist() {
-            return COVER_BLOCK_MODE.getOptionListValue().equals(FillBlockModeType.BLOCKLIST);
-        }
-
-        public static final ConfigOptionList COVER_SELECTION_TYPE = optionList("coverSelectionType")
-                .defaultValue(SelectionType.LITEMATICA_SELECTION)
-                .build();
-
-        public static final ConfigOptionList COVER_BLOCK_MODE = optionList("coverBlockMode")
-                .defaultValue(FillBlockModeType.BLOCKLIST)
-                .build();
-
-        public static final ConfigStringList COVER_BLOCK_LIST = stringList("coverBlockList")
-                // Keep the nested config class independent from outer Configs initialization.
-                // Cover can be initialized first by FeatureModuleSet during client startup.
-                .defaultValue("#minecraft:carpets", "#minecraft:slabs", "#minecraft:rails")
-                .setVisible(Cover::isBlocklist)
-                .build();
-
-        public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
-                COVER_SELECTION_TYPE,
-                COVER_BLOCK_MODE,
-                COVER_BLOCK_LIST
-        );
-    }
-
-    public static class Fluid {
-
-        // 选区类型
-        public static final ConfigOptionList FLUID_SELECTION_TYPE = optionList("fluidSelectionType")
-                .defaultValue(SelectionType.LITEMATICA_SELECTION)
-                .build();
-
-        // 填充流动液体
-        public static final ConfigBoolean FILL_FLOWING_FLUID = bool("fluidModeFillFlowing")
-                .defaultValue(true)
-                .build();
-
-        // 方块名单
-        public static final ConfigStringList FLUID_REPLACE_BLOCK_LIST = stringList("fluidReplaceBlockList")
-                .defaultValue(Blocks.SAND)
-                .build();
-
-        // 液体名单
-        public static final ConfigStringList FLUID_LIST = stringList("fluidList")
-                .defaultValue(Blocks.WATER, Blocks.LAVA)
-                .build();
-
-        public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
-                FLUID_SELECTION_TYPE,         // 排流体 - 选区类型
-                FILL_FLOWING_FLUID,           // 排流体 - 填充流动液体
-                FLUID_REPLACE_BLOCK_LIST,             // 排流体 - 方块名单
-                FLUID_LIST                    // 排流体 - 液体名单
-        );
-    }
-
     public static class Hotkeys {
         public static final ConfigHotkey SYNC_INVENTORY = hotkey("syncInventory")
                 .defaultStorageString("")
@@ -787,18 +540,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
         // 关闭全部模式
         public static final ConfigHotkey CLOSE_ALL_MODE = hotkey("closeAllMode")
                 .defaultStorageString("LEFT_CONTROL,G")
-                .build();
-
-        // 切换模式
-        public static final ConfigHotkey SWITCH_PRINTER_MODE = hotkey("switchPrinterMode")
-                .bindConfig(Core.WORK_MODE_TYPE)
-                .setVisible(Core::isSingleMode) // 仅单模式时显示
-                .build();
-
-        // 破基岩
-        public static final ConfigBooleanHotkeyed BEDROCK = booleanHotkey("bedrock")
-                .defaultValue(false)
-                .setVisible(Core::isMultiMode) // 仅多模式时显示
                 .build();
 
         // 选区容器缓存
@@ -817,15 +558,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 SYNC_INVENTORY,
                 Core.WORK_SWITCH,
                 CLOSE_ALL_MODE,               // 关闭全部模式
-                SWITCH_PRINTER_MODE,          // 切换模式
-
-                // 多模
-                Core.PRINT,
-                Core.MINE,                // 挖掘
-                Core.FILL,                    // 填充
-                Core.FLUID,                  // 排流体
-                Core.COVER,                  // 铺盖
-                BEDROCK,                       // 破基岩
                 CACHE_SELECTION_CONTAINERS,
                 CLEAR_CONTAINER_CACHE
         );
@@ -848,9 +580,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                         && obj.get("configSchemaVersion").getAsJsonPrimitive().isNumber()
                         ? obj.get("configSchemaVersion").getAsInt() : 0;
                 if (schemaVersion < CONFIG_SCHEMA_VERSION) {
-                    if (schemaVersion < 3 && isLegacyCoverBlockList(Cover.COVER_BLOCK_LIST.getStrings())) {
-                        Cover.COVER_BLOCK_LIST.setStrings(DEFAULT_COVER_BLOCK_FILTERS);
-                    }
                     // The old field defaulted to true but was a no-op. Do not turn that
                     // persisted compatibility value into a new runtime behavior on upgrade.
                     Break.BREAK_USE_DELAYED_DESTROY.setBooleanValue(false);
@@ -889,14 +618,5 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
 
     public static void saveToFile() {
         Configs.INSTANCE.save();
-    }
-
-    private static boolean isLegacyCoverBlockList(List<String> filters) {
-        if (filters == null || filters.size() != 1) {
-            return false;
-        }
-        String filter = filters.get(0);
-        return "minecraft:smooth_stone_slab".equals(filter)
-                || "minecraft:tuff_slab".equals(filter);
     }
 }

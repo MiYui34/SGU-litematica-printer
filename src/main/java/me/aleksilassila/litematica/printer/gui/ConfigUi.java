@@ -83,12 +83,7 @@ public class ConfigUi extends GuiConfigsBase {
         PLACEMENT(I18n.of("category.placement")),
         BREAK(I18n.of("category.break")),
         HOTKEYS(I18n.of("category.hotkeys")),
-        PRINT(I18n.of("category.print")),
-        EXCAVATE(I18n.of("category.mine")),
-        FILL(I18n.of("category.fill")),
-        COVER(I18n.of("category.cover")),
-        FLUID(I18n.of("category.fluid")),
-        BEDROCK(I18n.of("category.bedrock"));
+        PRINT(I18n.of("category.print"));
 
         private final I18n i18n;
 
@@ -110,12 +105,7 @@ public class ConfigUi extends GuiConfigsBase {
                 case SPECIAL -> Configs.Special.OPTIONS;
                 case PLACEMENT -> Configs.Placement.OPTIONS;
                 case BREAK -> Configs.Break.OPTIONS;
-                case BEDROCK -> Configs.Bedrock.OPTIONS;
                 case PRINT -> Configs.Print.OPTIONS;
-                case EXCAVATE -> Configs.Mine.OPTIONS;
-                case FILL -> Configs.Fill.OPTIONS;
-                case COVER -> Configs.Cover.OPTIONS;
-                case FLUID -> Configs.Fluid.OPTIONS;
                 case HOTKEYS -> Configs.Hotkeys.OPTIONS;
             };
         }

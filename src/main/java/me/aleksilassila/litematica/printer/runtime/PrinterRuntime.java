@@ -27,7 +27,6 @@ import me.aleksilassila.litematica.printer.integration.inventory.TakeItOutAdapte
 import me.aleksilassila.litematica.printer.integration.litematica.LitematicaAdapter;
 import me.aleksilassila.litematica.printer.integration.quickshulker.QuickShulkerAdapter;
 import me.aleksilassila.litematica.printer.integration.tweakeroo.TweakerooAdapter;
-import me.aleksilassila.litematica.printer.handler.handlers.bedrock.BedrockEngine;
 import me.aleksilassila.litematica.printer.interaction.ToolSwitchService;
 import me.aleksilassila.litematica.printer.interaction.StrippableBlockPort;
 import me.aleksilassila.litematica.printer.integration.inventory.StrippableBlockAdapter;
@@ -55,7 +54,6 @@ public final class PrinterRuntime {
     private long currentTick = Long.MIN_VALUE;
     private boolean resetting;
     private MaterialRequestCoordinator materialRequests;
-    private final BedrockEngine bedrockEngine;
     private final FeatureModuleSet modules;
     private final ActionBroker actionBroker;
     private final ScanEngine scanEngine;
@@ -81,10 +79,7 @@ public final class PrinterRuntime {
         this.cooldownUtils = new CooldownUtils();
         this.scope.register(this.cooldownUtils);
         this.litematica = new LitematicaAdapter();
-        this.bedrockEngine = new BedrockEngine(client, this.cooldownUtils, this::currentTick, this.litematica);
-        this.events.subscribe(this.bedrockEngine::onRuntimeEvent);
         this.scope.register(new MinecraftInteractionRuntime(client));
-        this.scope.register(this.bedrockEngine);
         this.actionBroker = new ActionBroker(this, new ActionManager());
         this.scope.register(this.actionBroker);
         this.inventorySwitchGuard = new InventorySwitchGuard(client, this::currentTick);
@@ -131,10 +126,6 @@ public final class PrinterRuntime {
 
     public RuntimeEventBus events() {
         return this.events;
-    }
-
-    public BedrockEngine bedrockEngine() {
-        return this.bedrockEngine;
     }
 
     public FeatureModuleSet modules() {

@@ -1,6 +1,6 @@
 package me.aleksilassila.litematica.printer.interaction;
 
-import me.aleksilassila.litematica.printer.handler.handlers.MineDebugLog;
+import me.aleksilassila.litematica.printer.utils.PrinterDebugLog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -54,7 +54,7 @@ final class MiningFeedback {
             BlockState state = level.getBlockState(pos);
             if (state.isAir() || state.getBlock() instanceof LiquidBlock) {
                 iterator.remove();
-                MineDebugLog.write("mine pending cleared pos=" + MineDebugLog.pos(pos) + " reason=state_cleared");
+                PrinterDebugLog.write("mine pending cleared pos=" + PrinterDebugLog.pos(pos) + " reason=state_cleared");
                 continue;
             }
             float progress = state.getDestroyProgress(player, level, pos);
@@ -62,8 +62,8 @@ final class MiningFeedback {
                     : Math.max(8, Math.min((int) Math.ceil(1.0F / progress) + 10, 200));
             if (currentTick - entry.getValue() >= timeout) {
                 iterator.remove();
-                MineDebugLog.write("mine pending timeout pos=" + MineDebugLog.pos(pos)
-                        + " timeoutTicks=" + timeout + " state=" + MineDebugLog.describeState(state));
+                PrinterDebugLog.write("mine pending timeout pos=" + PrinterDebugLog.pos(pos)
+                        + " timeoutTicks=" + timeout + " state=" + PrinterDebugLog.describeState(state));
             }
         }
     }

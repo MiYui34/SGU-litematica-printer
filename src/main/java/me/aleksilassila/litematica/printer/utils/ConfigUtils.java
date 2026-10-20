@@ -23,60 +23,6 @@ public class ConfigUtils {
         return Configs.Core.WORK_SWITCH.getBooleanValue();
     }
 
-    public static boolean isMultiMode() {
-        return Configs.Core.WORK_MODE.getOptionListValue().equals(WorkingModeType.MULTI);
-    }
-
-    public static boolean isSingleMode() {
-        return Configs.Core.WORK_MODE.getOptionListValue().equals(WorkingModeType.SINGLE);
-    }
-
-    public static boolean isPrintMode() {
-        if (isMultiMode()) {
-            return Configs.Core.PRINT.getBooleanValue();
-        }
-        return Configs.Core.WORK_MODE_TYPE.getOptionListValue() == PrintModeType.PRINTER;
-    }
-
-    public static boolean isMineMode() {
-        if (isMultiMode()) {
-            return Configs.Core.MINE.getBooleanValue();
-        }
-        return Configs.Core.WORK_MODE_TYPE.getOptionListValue() == PrintModeType.MINE;
-    }
-
-    public static boolean isFillMode() {
-        if (isMultiMode()) {
-            return Configs.Core.FILL.getBooleanValue();
-        }
-        return Configs.Core.WORK_MODE_TYPE.getOptionListValue() == PrintModeType.FILL;
-    }
-
-    public static boolean isFluidMode() {
-        if (isMultiMode()) {
-            return Configs.Core.FLUID.getBooleanValue();
-        }
-        return Configs.Core.WORK_MODE_TYPE.getOptionListValue() == PrintModeType.FLUID;
-    }
-
-    public static boolean isCoverMode() {
-        if (isMultiMode()) {
-            return Configs.Core.COVER.getBooleanValue();
-        }
-        return Configs.Core.WORK_MODE_TYPE.getOptionListValue() == PrintModeType.COVER;
-    }
-
-    public static boolean isBedrockMode() {
-        if (isMultiMode()) {
-            return Configs.Hotkeys.BEDROCK.getBooleanValue();
-        }
-        return Configs.Core.WORK_MODE_TYPE.getOptionListValue() == PrintModeType.BEDROCK;
-    }
-
-    public static PrintModeType getPrintModeType() {
-        return (PrintModeType) Configs.Core.WORK_MODE_TYPE.getOptionListValue();
-    }
-
     public static int getPlaceCooldown() {
         return Configs.Placement.PLACE_COOLDOWN.getIntegerValue();
     }
@@ -194,21 +140,6 @@ public class ConfigUtils {
             case LITEMATICA_SELECTION_ABOVE_PLAYER -> pos.getY() >= Math.ceil(player.getY());
             default -> true;
         };
-    }
-
-    public static Direction getFillModeFacing() {
-        if (Configs.Fill.FILL_BLOCK_FACING.getOptionListValue() instanceof FillModeFacingType fillModeFacingType) {
-            return switch (fillModeFacingType) {
-                case DOWN -> Direction.DOWN;
-                case UP -> Direction.UP;
-                case WEST -> Direction.WEST;
-                case EAST -> Direction.EAST;
-                case NORTH -> Direction.NORTH;
-                case SOUTH -> Direction.SOUTH;
-                default -> null;
-            };
-        }
-        return null;
     }
 
     public static float getBreakProgressThreshold() {
