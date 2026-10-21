@@ -59,7 +59,7 @@ val Project.javaVersion
 val Project.mixinJavaVersion get() = "JAVA_${javaVersion}"
 
 val Project.fullProjectVersion: String get() {
-    return ciBuildVersion ?: "$modVersion-local"
+    return ciBuildVersion ?: "$modVersion-sgu"
 }
 
 private val Project.modVersionFlavorSuffix: String
@@ -72,7 +72,7 @@ val Project.artifactVersion: String get() {
     return when {
         buildNumber != null && isReleaseWorkflow -> "$baseVersion$flavorSuffix-beta$buildNumber"
         buildNumber != null -> "$baseVersion$flavorSuffix-dev$buildNumber"
-        else -> "$baseVersion$flavorSuffix-local"
+        else -> "$baseVersion-$modVersion-sgu"
     }
 }
 
