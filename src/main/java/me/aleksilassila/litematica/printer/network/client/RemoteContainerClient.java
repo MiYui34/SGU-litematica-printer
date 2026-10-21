@@ -27,8 +27,12 @@ public final class RemoteContainerClient {
     private static volatile boolean available;
     private static volatile int maxRange;
 
-    private static final Map<Integer, BlockPos> PENDING = new HashMap<>();
+    private static final Map<Integer, PendingRequest> PENDING = new HashMap<>();
+    private static final long PENDING_TIMEOUT_MILLIS = 30_000L;
     private static int nextNonce = 1;
+
+    private record PendingRequest(BlockPos pos, long createdAt) {
+    }
 
     private RemoteContainerClient() {
     }
@@ -40,7 +44,8 @@ public final class RemoteContainerClient {
     }
 
     public static void receiveResult(OpenContainerResultPayload payload, ClientPlayNetworking.Context context) {
-        BlockPos pos = PENDING.remove(payload.nonce());
+        PendingRequest request = PENDING.remove(payload.nonce());
+        BlockPos pos = request == null ? null : request.pos();
         if (pos == null) {
             return;
         }
@@ -88,11 +93,13 @@ public final class RemoteContainerClient {
         if (client.level == null || !isAvailable()) {
             return false;
         }
+        long now = System.currentTimeMillis();
+        PENDING.values().removeIf(pending -> now - pending.createdAt() > PENDING_TIMEOUT_MILLIS);
         int nonce = nextNonce++;
         if (nextNonce <= 0) {
             nextNonce = 1;
         }
-        PENDING.put(nonce, pos.immutable());
+        PENDING.put(nonce, new PendingRequest(pos.immutable(), now));
         ClientPlayNetworking.send(new OpenContainerRequestPayload(
                 client.level.dimension(), pos.immutable(), nonce));
         return true;

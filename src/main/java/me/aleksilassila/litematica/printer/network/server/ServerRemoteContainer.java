@@ -48,11 +48,13 @@ public final class ServerRemoteContainer {
 
     /** 票据保活时长：够把界面打开、再把候选容器扫一遍。 */
     private static final int TICKET_LIFETIME_TICKS = 200;
+    /** 远程会话的最长存活时间：客户端异常（崩溃/卡死）时兜底，避免区块被永久票住。 */
+    private static final int SESSION_LIFETIME_TICKS = 1200;
 
     private record Pending(ServerPlayer player, ServerLevel level, BlockPos pos, int nonce, long deadline) {
     }
 
-    private record Session(ServerPlayer player, ServerLevel level, BlockPos pos, int nonce) {
+    private record Session(ServerPlayer player, ServerLevel level, BlockPos pos, int nonce, long expireTick) {
     }
 
     private record Ticket(ServerLevel level, ChunkPos chunk, long expireTick) {
@@ -104,6 +106,10 @@ public final class ServerRemoteContainer {
                 continue;
             }
             if (!session.player.isAlive() || session.player.hasDisconnected()) {
+                iterator.remove();
+                continue;
+            }
+            if (session.level.getGameTime() > session.expireTick) {
                 iterator.remove();
                 continue;
             }
@@ -223,7 +229,8 @@ public final class ServerRemoteContainer {
                 new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
         boolean opened = player.containerMenu != player.inventoryMenu;
         if (opened || result instanceof InteractionResult.Success) {
-            SESSIONS.put(player.getUUID(), new Session(player, level, pos.immutable(), nonce));
+            SESSIONS.put(player.getUUID(), new Session(player, level, pos.immutable(), nonce,
+                    level.getGameTime() + SESSION_LIFETIME_TICKS));
             reply(player, nonce, OpenContainerResultPayload.STATUS_OK);
         } else {
             reply(player, nonce, OpenContainerResultPayload.STATUS_REJECTED);
