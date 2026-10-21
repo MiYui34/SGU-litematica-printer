@@ -32,14 +32,5 @@ class EmptyShulkerRequirementTest {
         assertFalse(request.acceptsStack(ItemStack.EMPTY));
         var normal = MaterialRequest.single(2, Items.SHULKER_BOX, 1, MaterialRequest.Source.PICK_BLOCK);
         assertTrue(normal.acceptsStack(full), "Ordinary pick-block keeps its existing semantics");
-        var chest = new ChestTrackerAdapter(null);
-        InventoryRegressionTest.set(chest, "activeRequest", request);
-        InventoryRegressionTest.set(chest, "requestedItems", List.of(Items.SHULKER_BOX));
-        var matches = ChestTrackerAdapter.class.getDeclaredMethod("matches", ItemStack.class);
-        matches.setAccessible(true);
-        assertFalse((boolean) matches.invoke(chest, full));
-        assertTrue((boolean) matches.invoke(chest, new ItemStack(Items.SHULKER_BOX)));
-        InventoryRegressionTest.set(chest, "activeRequest", normal);
-        assertTrue((boolean) matches.invoke(chest, full));
     }
 }

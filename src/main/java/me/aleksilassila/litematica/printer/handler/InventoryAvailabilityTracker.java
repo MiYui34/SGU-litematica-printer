@@ -13,7 +13,6 @@ import net.minecraft.world.item.ItemStack;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeComponent;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeEvent;
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
-import me.aleksilassila.litematica.printer.utils.mods.TakeItOutUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -62,16 +61,9 @@ public final class InventoryAvailabilityTracker implements RuntimeComponent {
             }
         }
         if (trackAvailability) {
-            // Take It Out throttles this request internally (500 ms and one in-flight payload),
-            // so polling here keeps the render-only view fresh without sending a packet every tick.
-            TakeItOutUtils.requestAvailableItemsRefresh();
-            // Quick Shulker and Take It Out may have accepted the material request while the
-            // resulting stack is still travelling through their external inventory flow.
+            // Quick Shulker may have accepted the material request while the resulting stack is
+            // still travelling through its external inventory flow.
             this.availableItems.addAll(RuntimeAccess.get().materialRequests().activeItems());
-            // Take It Out keeps linked-container contents outside the player inventory. Include
-            // its positive-count cache entries so Render Only Holding Items reflects material that
-            // can actually be fetched through the enabled integration.
-            this.availableItems.addAll(TakeItOutUtils.getAvailableItems());
         }
         if (this.initialized) {
             for (Map.Entry<Item, Integer> entry : this.currentCounts.entrySet()) {

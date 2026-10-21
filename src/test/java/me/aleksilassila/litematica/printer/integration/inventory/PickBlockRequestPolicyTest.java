@@ -17,7 +17,7 @@ class PickBlockRequestPolicyTest {
     }
 
     @Test
-    void unavailableProviderLeavesInputForNativeHooksEvenWhenTakeItOutIsInstalled() {
+    void unavailableProviderLeavesInputForNativeHooks() {
         assertFalse(PickBlockRequestPolicy.shouldConsume(
                 MaterialReservation.State.UNAVAILABLE
         ));

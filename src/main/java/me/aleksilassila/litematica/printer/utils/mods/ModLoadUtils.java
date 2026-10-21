@@ -9,10 +9,6 @@ public class ModLoadUtils {
         return FabricLoader.getInstance().isModLoaded(modId);
     }
 
-    public static boolean isChestTrackerLoaded(){
-        return isLoadMod("chesttracker");
-    }
-
     public static boolean isQuickShulkerLoaded(){
         return isLoadMod("quickshulker");
     }

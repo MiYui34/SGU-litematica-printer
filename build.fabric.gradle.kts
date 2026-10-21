@@ -113,29 +113,7 @@ dependencies {
         }
     }
 
-    val chestTrackerUrl = propStrOrNull("chesttracker")
-    if (chestTrackerUrl?.startsWith("http") == true) {
-        val chestTrackerFile = downloadDependencyMod(chestTrackerUrl)
-        if (chestTrackerFile != null && chestTrackerFile.exists()) {
-            implementation(files(chestTrackerFile))
-        }
-    }
-
-    val chestTrackerCompileOnlyUrl = propStrOrNull("chesttracker_compile_only")
-    if (chestTrackerCompileOnlyUrl?.startsWith("http") == true) {
-        val chestTrackerFile = downloadDependencyMod(chestTrackerCompileOnlyUrl)
-        if (chestTrackerFile != null && chestTrackerFile.exists()) {
-            compileOnly(files(chestTrackerFile))
-        }
-    }
-
-    // 开发环境跑客户端时 ChestTracker 需要 yacl；把 jar 放进 libs/ 即生效，发布出去的模组不依赖它。
-    val yaclFile = rootProject.file("libs/yet_another_config_lib_v3-3.9.4+26.1-fabric.jar")
-    if (yaclFile.exists()) {
-        implementation(files(yaclFile))
-    }
-
-    implementation("me.fallenbreath:conditional-mixin-fabric:0.6.4")
+        implementation("me.fallenbreath:conditional-mixin-fabric:0.6.4")
 }
 
 tasks.withType<Test>().configureEach {

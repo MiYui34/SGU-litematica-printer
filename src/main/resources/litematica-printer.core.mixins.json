@@ -2,7 +2,6 @@
   "required": true,
   "minVersion": "0.8",
   "package": "me.aleksilassila.litematica.printer.mixin",
-  "plugin": "me.aleksilassila.litematica.printer.mixin_plugin.ChestTrackerMixinConfigPlugin",
   "compatibilityLevel": "${compatibility_level}",
   "client": [
     "MixinClientPacketListener",
@@ -18,7 +17,6 @@
     "printer.mc.MixinGui",
     "printer.mc.MixinLocalPlayer",
     "printer.mc.MixinServerboundMovePlayerPacket",
-    ${chesttracker_client_mixins}
     "printer.mc.MixinMultiPlayerGameMode"
   ],
   "injectors": {

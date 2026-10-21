@@ -22,17 +22,12 @@ import me.aleksilassila.litematica.printer.utils.mods.QuickShulkerBridge;
 import me.aleksilassila.litematica.printer.integration.inventory.InventoryProvider;
 import me.aleksilassila.litematica.printer.integration.inventory.MaterialRequestCoordinator;
 import me.aleksilassila.litematica.printer.integration.inventory.PlayerInventoryProvider;
-import me.aleksilassila.litematica.printer.integration.inventory.ChestTrackerAdapter;
-import me.aleksilassila.litematica.printer.integration.inventory.TakeItOutAdapter;
 import me.aleksilassila.litematica.printer.integration.litematica.LitematicaAdapter;
 import me.aleksilassila.litematica.printer.integration.quickshulker.QuickShulkerAdapter;
 import me.aleksilassila.litematica.printer.integration.tweakeroo.TweakerooAdapter;
 import me.aleksilassila.litematica.printer.interaction.ToolSwitchService;
 import me.aleksilassila.litematica.printer.interaction.StrippableBlockPort;
 import me.aleksilassila.litematica.printer.integration.inventory.StrippableBlockAdapter;
-//#if MC >= 12111
-import me.aleksilassila.litematica.printer.integration.voidwarehouse.VoidWarehouseRestockAdapter;
-//#endif
 import net.minecraft.client.Minecraft;
 import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.guide.guides.RailGuide;
@@ -65,14 +60,12 @@ public final class PrinterRuntime {
     private final MissingMaterialTracker missingMaterials;
     private final HudStatsManager hudStats;
     private final QuickShulkerAdapter quickShulkerAdapter;
-    private final ChestTrackerAdapter chestTrackerAdapter;
     private final InventorySwitchGuard inventorySwitchGuard;
     private final InventoryMessageCooldown inventoryMessageCooldown;
     private final LitematicaAdapter litematica;
     private final TweakerooAdapter tweakeroo;
     private final ToolSwitchService toolSwitchService;
     private final StrippableBlockPort strippableBlocks;
-    private final me.aleksilassila.litematica.printer.integration.containersync.ContainerSyncController containerSync;
 
     public PrinterRuntime() {
         Minecraft client = Minecraft.getInstance();
@@ -105,19 +98,11 @@ public final class PrinterRuntime {
         this.scope.register(this.hudStats);
         this.quickShulkerAdapter = new QuickShulkerAdapter(this.actionBroker);
         this.scope.register(this.quickShulkerAdapter);
-        this.chestTrackerAdapter = new ChestTrackerAdapter(this.actionBroker);
-        this.scope.register(this.chestTrackerAdapter);
-        this.containerSync = new me.aleksilassila.litematica.printer.integration.containersync.ContainerSyncController(this);
-        this.scope.register(this.containerSync);
         this.modules = new FeatureModuleSet(this);
     }
 
     public RuntimeEpoch epoch() {
         return this.epoch;
-    }
-
-    public me.aleksilassila.litematica.printer.integration.containersync.ContainerSyncController containerSync() {
-        return this.containerSync;
     }
 
     public long currentTick() {
@@ -172,10 +157,6 @@ public final class PrinterRuntime {
         return this.quickShulkerAdapter;
     }
 
-    public ChestTrackerAdapter chestTrackerAdapter() {
-        return this.chestTrackerAdapter;
-    }
-
     public InventorySwitchGuard inventorySwitchGuard() {
         return this.inventorySwitchGuard;
     }
@@ -214,12 +195,7 @@ public final class PrinterRuntime {
             // AVAILABLE/PENDING provider. Changing the order changes user-visible pickup priority.
             List<InventoryProvider> providers = new ArrayList<>();
             providers.add(new PlayerInventoryProvider(Minecraft.getInstance()));
-            providers.add(new TakeItOutAdapter(this.actionBroker));
-            //#if MC >= 12111
-            providers.add(new VoidWarehouseRestockAdapter(this.actionBroker));
-            //#endif
             providers.add(this.quickShulkerAdapter);
-            providers.add(this.chestTrackerAdapter);
             this.materialRequests = new MaterialRequestCoordinator(List.copyOf(providers));
             this.scope.register(this.materialRequests);
         }
@@ -237,9 +213,7 @@ public final class PrinterRuntime {
         }
 
         this.cooldownUtils.tick();
-        this.containerSync.tick();
         QuickShulkerBridge.onTick();
-        this.chestTrackerAdapter.tick();
         if (this.materialRequests != null) {
             this.materialRequests.tick();
             this.quickShulkerAdapter.clearExternalRequestIfIdle(this.materialRequests.isBusy());

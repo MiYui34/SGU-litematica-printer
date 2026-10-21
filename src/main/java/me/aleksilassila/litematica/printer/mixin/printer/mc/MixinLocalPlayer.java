@@ -57,12 +57,6 @@ public class MixinLocalPlayer extends AbstractClientPlayer {
             this.litematica_printer$runtimeResetDone = true;
         }
     }
-
-    @Inject(method = "closeContainer", at = @At("HEAD"), cancellable = true)
-    private void printer$drainContainerSync(CallbackInfo ci) {
-        if (RuntimeAccess.get().containerSync().guardClose()) ci.cancel();
-    }
-
     @Inject(method = "openTextEdit", at = @At("HEAD"), cancellable = true)
     //#if MC >= 260300
     //$$ public void openTextEdit(SignBlockEntity sign, SignTextSlot slot, CallbackInfo ci) {

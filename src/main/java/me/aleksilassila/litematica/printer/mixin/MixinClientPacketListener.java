@@ -2,7 +2,6 @@ package me.aleksilassila.litematica.printer.mixin;
 
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
 import me.aleksilassila.litematica.printer.utils.mods.QuickShulkerBridge;
-import me.aleksilassila.litematica.printer.utils.mods.ChestTrackerBridge;
 import me.aleksilassila.litematica.printer.utils.minecraft.NetworkUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -29,7 +28,6 @@ public abstract class MixinClientPacketListener {
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/MenuScreens;create(Lnet/minecraft/world/inventory/MenuType;Lnet/minecraft/client/Minecraft;ILnet/minecraft/network/chat/Component;)V"), method = "handleOpenScreen")
     private void printer$trackQuickShulkerContainerOpen(ClientboundOpenScreenPacket packet, CallbackInfo ci) {
         QuickShulkerBridge.onContainerOpen(packet.getContainerId(), packet.getType());
-        RuntimeAccess.get().containerSync().opened(packet.getContainerId(), packet.getType());
     }
 
     @Inject(
@@ -49,11 +47,6 @@ public abstract class MixinClientPacketListener {
             NetworkUtils.sendPacket(new ServerboundContainerClosePacket(packet.getContainerId()));
             ci.cancel();
         }
-    }
-
-    @Inject(at = @At("TAIL"), method = "handleOpenScreen")
-    private void printer$trackContainerOpen(ClientboundOpenScreenPacket packet, CallbackInfo ci) {
-        ChestTrackerBridge.onContainerOpen(packet.getContainerId());
     }
 
     @Inject(at = @At("TAIL"), method = "handleContainerContent")
@@ -77,16 +70,10 @@ public abstract class MixinClientPacketListener {
         if (client.player != null && containerId == client.player.containerMenu.containerId) {
             QuickShulkerBridge.onSlotUpdate(-1, -1, carried);
         }
-        ChestTrackerBridge.onContainerContent(containerId);
         if (client.player == null || containerId != client.player.containerMenu.containerId) {
             return;
         }
         QuickShulkerBridge.onInventoryContent(containerId, items, carried);
-        //#if MC >= 12105
-        RuntimeAccess.get().containerSync().content(containerId, packet.stateId(), items, carried);
-        //#else
-        //$$ RuntimeAccess.get().containerSync().content(containerId, packet.getStateId(), items, carried);
-        //#endif
     }
     @Inject(at = @At("TAIL"), method = "handleContainerSetSlot")
     private void printer$confirmQuickShulkerSlot(ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {

@@ -5,7 +5,6 @@ import me.aleksilassila.litematica.printer.utils.mods.ModLoadUtils;
 import me.aleksilassila.litematica.printer.utils.mods.ShulkerUtils;
 import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
-import me.aleksilassila.litematica.printer.utils.mods.TakeItOutUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -391,8 +390,7 @@ public final class QuickShulkerRequestController {
                 && Configs.Placement.QUICK_SHULKER.getBooleanValue()
                 && !this.externalRequestAllowed
                 && !this.isOpenHandler
-                && !RuntimeAccess.get().inventorySwitchGuard().isWaiting()
-                && !TakeItOutUtils.isAwaitingStack()) {
+                && !RuntimeAccess.get().inventorySwitchGuard().isWaiting()) {
             this.orderedStorage.maintainOrderlyStorage();
         }
     }

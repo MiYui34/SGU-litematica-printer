@@ -170,24 +170,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 .setVisible(ModLoadUtils::isTweakerooLoaded)
                 .build();
 
-        // Chest Tracker 远程取物开关
-        public static final ConfigBooleanHotkeyed REMOTE_TAKE = booleanHotkey("remoteTake")
-                .defaultValue(false)
-                .setVisible(ModLoadUtils::isChestTrackerLoaded)
-                .build();
-
-        //#if MC >= 12111
-        // 虚空仓库补货：缺料时向服务端的 carpet-Neko-Addition 要一组材料
-        public static final ConfigBoolean VOID_WAREHOUSE_RESTOCK = bool("voidWarehouseRestock")
-                .defaultValue(true)
-                .build();
-
-        // 虚空仓库库存：材料列表里的「已有数量」把仓库库存也算进去
-        public static final ConfigBoolean VOID_WAREHOUSE_MATERIAL_LIST = bool("voidWarehouseMaterialList")
-                .defaultValue(true)
-                .build();
-        //#endif
-
         public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
                 //#if MC < 260200
                 UNLOCK_BEACON_EFFECTS,
@@ -196,12 +178,7 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 Placement.QUICK_SHULKER,
                 Placement.QUICK_SHULKER_MODE,
                 Placement.QUICK_SHULKER_COOLDOWN,
-                Placement.STORE_ORDERLY,
-                //#if MC >= 12111
-                VOID_WAREHOUSE_RESTOCK,
-                VOID_WAREHOUSE_MATERIAL_LIST,
-                //#endif
-                REMOTE_TAKE
+                Placement.STORE_ORDERLY
         );
     }
 
@@ -541,9 +518,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
     }
 
     public static class Hotkeys {
-        public static final ConfigHotkey SYNC_INVENTORY = hotkey("syncInventory")
-                .defaultStorageString("")
-                .build();
         // 打开设置菜单
         public static final ConfigHotkey OPEN_SCREEN = hotkey("openScreen")
                 .defaultStorageString("Z,Y")
@@ -554,24 +528,10 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 .defaultStorageString("LEFT_CONTROL,G")
                 .build();
 
-        // 选区容器缓存
-        public static final ConfigHotkey CACHE_SELECTION_CONTAINERS = hotkey("cacheSelectionContainers")
-                .defaultStorageString("")
-                .setVisible(ModLoadUtils::isChestTrackerLoaded)
-                .build();
-
-        public static final ConfigHotkey CLEAR_CONTAINER_CACHE = hotkey("clearContainerCache")
-                .defaultStorageString("")
-                .setVisible(ModLoadUtils::isChestTrackerLoaded)
-                .build();
-
         public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
-                OPEN_SCREEN,                  // 打开设置菜单
-                SYNC_INVENTORY,
+                OPEN_SCREEN,
                 Core.WORK_SWITCH,
-                CLOSE_ALL_MODE,               // 关闭全部模式
-                CACHE_SELECTION_CONTAINERS,
-                CLEAR_CONTAINER_CACHE
+                CLOSE_ALL_MODE
         );
     }
 
