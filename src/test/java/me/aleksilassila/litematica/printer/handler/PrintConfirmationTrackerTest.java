@@ -48,7 +48,10 @@ class PrintConfirmationTrackerTest {
         this.tracker.track(POS, Blocks.STONE.defaultBlockState(), 10L, 80);
 
         assertTrue(this.tracker.expire(90L, 8).isEmpty());
-        assertEquals(List.of(POS), this.tracker.expire(91L, 8));
+        assertEquals(
+                List.of(new PrintConfirmationTracker.ExpiredPlacement(POS, Blocks.STONE.defaultBlockState())),
+                this.tracker.expire(91L, 8)
+        );
         assertTrue(this.tracker.expire(92L, 8).isEmpty());
     }
 
