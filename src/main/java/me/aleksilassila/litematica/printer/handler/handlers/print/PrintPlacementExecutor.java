@@ -326,7 +326,9 @@ public final class PrintPlacementExecutor {
         if (primaryLookDirection.getAxis().isHorizontal()) {
             float currentPitch = context.client.player.getXRot();
             currentPitch = Math.max(-40.0F, Math.min(40.0F, currentPitch));
-            this.actionBroker.setWaitForHorizontalLook(false);
+            // SGU 的数据包打印总是「先转身，下一 tick 再发放置包」；本地预测模式不需要这个等待，
+            // 但数据包模式跳过它就会让服务端用旧视角处理点击（有反作弊/交互校验的服务器会拒绝或放错）。
+            this.actionBroker.setWaitForHorizontalLook(!Configs.Placement.PRINT_USE_PACKET.getBooleanValue());
             return new PlayerLook(playerLook.getYaw(), currentPitch);
         }
         return playerLook;

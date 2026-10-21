@@ -38,6 +38,7 @@
 | 项 | 实现位置 |
 | --- | --- |
 | 数据包放置（`placeUsePacket`，默认关） | `Configs.Placement.PRINT_USE_PACKET` → `ActionManager.sendQueue` → `MixinMultiPlayerGameMode#litematica_printer$useItemOn(localPrediction)` |
+| 数据包放置的节奏（SGU 同款） | 侧面放置时**本 tick 只转身、下一 tick 才发 `ServerboundUseItemOnPacket`**：`PrintPlacementExecutor#adjustHorizontalLook` 在数据包模式下保留 `waitForHorizontalLook`，`ActionManager#shouldWaitForServerLook` 返回 `WAITING_FOR_LOOK`，`TickScheduler#advancePendingLookQueue` 下一 tick 重发队列并暂停扫描 |
 | 数据包破坏（`breakUsePacket`，默认关） | `Configs.Break.BREAK_USE_PACKET` → `InteractionUtils.continueDestroyBlock(...)` 的 `localPrediction` |
 | 数据包模式下的物品切换 | `InventoryUtils.swapItemToMainHand` 增加 `ServerboundContainerClickPacket`（含 `HashedStack` 快照）分支 |
 | 17 个 guide 的「错误状态方块破坏」 | `guide/guides/{Campfire,Candle,Chest,Comparator,Door,EndPortalFrame,FenceGate,FlowerBed,FlowerPot,Piston,Repeater,SeaPickle,Slab,Snow,Stair,TrapDoor,Vine}Guide` |
