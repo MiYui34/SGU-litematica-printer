@@ -68,4 +68,51 @@ class PrintConfirmationTrackerTest {
                 this.tracker.resolve(POS, Blocks.STONE.defaultBlockState())
         );
     }
+
+    @Test
+    void staleNeighbourUpdateCannotReleaseGuardedPlacement() {
+        this.tracker.trackGuarded(POS, Blocks.STONE.defaultBlockState(), 10L, 80, 42);
+
+        assertEquals(PrintConfirmationTracker.Resolution.NOT_TRACKED,
+                this.tracker.resolve(POS, Blocks.AIR.defaultBlockState()));
+        assertTrue(this.tracker.isPending(POS));
+        assertEquals(PrintConfirmationTracker.Resolution.MATCHED,
+                this.tracker.resolveGuarded(POS, 42, Blocks.STONE.defaultBlockState()));
+        assertFalse(this.tracker.isPending(POS));
+    }
+
+    @Test
+    void onlyLastClickInRepeatedActionCanResolveTheTarget() {
+        this.tracker.trackGuarded(POS, Blocks.STONE.defaultBlockState(), 10L, 80, 41);
+        this.tracker.trackGuarded(POS, Blocks.STONE.defaultBlockState(), 10L, 80, 42);
+        // The executor records its sent action after the packet interception registered the sequence.
+        this.tracker.track(POS, Blocks.STONE.defaultBlockState(), 10L, 80);
+
+        assertEquals(PrintConfirmationTracker.Resolution.NOT_TRACKED,
+                this.tracker.resolveGuarded(POS, 41, Blocks.DIRT.defaultBlockState()));
+        assertTrue(this.tracker.isGuarded(POS));
+        assertEquals(PrintConfirmationTracker.Resolution.MATCHED,
+                this.tracker.resolveGuarded(POS, 42, Blocks.STONE.defaultBlockState()));
+        assertEquals(PrintConfirmationTracker.Resolution.NOT_TRACKED,
+                this.tracker.resolveGuarded(POS, 42, Blocks.STONE.defaultBlockState()));
+    }
+
+    @Test
+    void guardedTimeoutAllowsRecoveryAndDoesNotAcceptAnOldReceiptForARetry() {
+        this.tracker.trackGuarded(POS, Blocks.STONE.defaultBlockState(), 10L, 20, 41);
+        assertEquals(1, this.tracker.expire(31L, 8).size());
+        this.tracker.trackGuarded(POS, Blocks.STONE.defaultBlockState(), 32L, 20, 42);
+
+        assertEquals(PrintConfirmationTracker.Resolution.NOT_TRACKED,
+                this.tracker.resolveGuarded(POS, 41, Blocks.AIR.defaultBlockState()));
+        assertTrue(this.tracker.isPending(POS));
+    }
+
+    @Test
+    void receiptExtensionNeverShortensExistingDeadline() {
+        this.tracker.track(POS, Blocks.STONE.defaultBlockState(), 10L, 80);
+        assertTrue(this.tracker.extend(POS, 20L, 10));
+        assertTrue(this.tracker.expire(31L, 8).isEmpty());
+        assertTrue(this.tracker.isPending(POS));
+    }
 }

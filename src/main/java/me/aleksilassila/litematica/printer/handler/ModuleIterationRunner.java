@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Consumes one feature candidate stream without owning its scan lifecycle. */
 final class ModuleIterationRunner {
     private static final int BUDGET_CHECK_INTERVAL = 8;
+    /** 单 tick 硬上限 = 扫描预算的倍数，防止高配置下动作耗时把客户端 tick 拖长。 */
+    private static final long HARD_TICK_CEILING_FACTOR = 8L;
 
     private ModuleIterationRunner() {
     }
@@ -40,11 +42,18 @@ final class ModuleIterationRunner {
         boolean bufferedCandidates = positions instanceof ScanCandidateIterable source
                 && source.isBuffered()
                 && source.availability() == ScanAvailability.READY;
+        // 不限每 tick 放置数（0）时逐个候选检查预算，避免连续放置把单 tick 拖到几十毫秒。
+        int budgetCheckInterval = maxEffectiveExec > 0 ? BUDGET_CHECK_INTERVAL : 1;
+        long hardCeilingNanos = budgetNanos * HARD_TICK_CEILING_FACTOR;
         for (BlockPos pos : positions) {
-            if (!bufferedCandidates && ++budgetChecks % BUDGET_CHECK_INTERVAL == 0
-                    && System.nanoTime() - iterationStartNanos - actionExecutionNanos >= budgetNanos) {
-                interrupt = true;
-                break;
+            if (!bufferedCandidates && ++budgetChecks % budgetCheckInterval == 0) {
+                long spentNanos = System.nanoTime() - iterationStartNanos;
+                // 每 tick 有上限时预算只约束扫描；无上限时动作耗时同样计入，否则等于没有上限。
+                long measuredNanos = maxEffectiveExec > 0 ? spentNanos - actionExecutionNanos : spentNanos;
+                if (measuredNanos >= budgetNanos || spentNanos >= hardCeilingNanos) {
+                    interrupt = true;
+                    break;
+                }
             }
             if (scanGuardLimit > 0 && totalIterCount++ >= scanGuardLimit) {
                 interrupt = true;

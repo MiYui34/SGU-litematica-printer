@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,15 +53,7 @@ public interface ActionPort {
 
     boolean setExpectedStackPredicate(@Nullable Predicate<ItemStack> expectedStackPredicate);
 
-    /**
-     * 标记当前排队的这次点击为「按精确状态放置」。
-     *
-     * <p>只有服务端声明支持、且该方块状态无法由原版放置表达时才会被调用；默认实现直接返回
-     * false，表示这条动作通道不支持精确放置，调用方退回原版放置。</p>
-     */
-    default boolean setExactPlacement(@NotNull BlockPos pos, @NotNull net.minecraft.world.level.block.state.BlockState state) {
-        return false;
-    }
+    void setPlacementContext(BlockPos pos, BlockState beforeState, BlockState expectedState);
 
     SendResult sendQueue(@Nullable LocalPlayer player);
 

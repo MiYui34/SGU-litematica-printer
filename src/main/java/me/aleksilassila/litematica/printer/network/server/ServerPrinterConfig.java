@@ -22,16 +22,8 @@ public final class ServerPrinterConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static ServerPrinterConfig instance;
 
-    /** 是否回发放置/破坏结果给客户端。关掉后客户端完全退回旧行为。 */
+    /** 是否发送旧通道的放置/破坏提示回执；校验请求所需的有序号响应仍然发送。 */
     public boolean interactionAck = true;
-
-    /**
-     * 是否接受客户端发来的「精确状态放置」请求。
-     *
-     * <p>蘑菇柄、藤蔓这类方块的状态无法由原版放置包表达，只有这条通道能让它们和投影逐位一致。
-     * 服务端仍会校验主手物品、交互距离、目标格可替换与 {@code canSurvive}。</p>
-     */
-    public boolean exactPlacement = true;
 
     public static ServerPrinterConfig get() {
         if (instance == null) {

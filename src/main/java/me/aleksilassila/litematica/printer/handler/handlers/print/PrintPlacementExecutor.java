@@ -187,11 +187,8 @@ public final class PrintPlacementExecutor {
             return PrintPlacementResult.cancelled(true);
         }
         this.actionBroker.setExpectedStackPredicate(requiredStackPredicate);
-        if (!(action instanceof ClickAction)) {
-            // 蘑菇柄/藤蔓这类状态原版放置表达不了，交给服务端按投影状态落块。
-            // 服务端没装本模组或关了该功能时，setExactPlacement 会返回 false，走原版放置。
-            this.actionBroker.setExactPlacement(blockPos, context.requiredState);
-        }
+        this.actionBroker.setPlacementContext(blockPos, context.currentState,
+                taskAction == null ? context.requiredState : taskAction.expectedBlockState(context, action));
         Vec3 hitModifier = this.litematica.usePrecisionPlacement(blockPos, context.requiredState);
         if (hitModifier != null) {
             this.actionBroker.useProtocolHitModifier(hitModifier);
@@ -333,7 +330,7 @@ public final class PrintPlacementExecutor {
             currentPitch = Math.max(-40.0F, Math.min(40.0F, currentPitch));
             // SGU 的数据包打印总是「先转身，下一 tick 再发放置包」；本地预测模式不需要这个等待，
             // 但数据包模式跳过它就会让服务端用旧视角处理点击（有反作弊/交互校验的服务器会拒绝或放错）。
-            this.actionBroker.setWaitForHorizontalLook(!Configs.Placement.PRINT_USE_PACKET.getBooleanValue());
+            this.actionBroker.setWaitForHorizontalLook(Configs.Placement.PRINT_USE_PACKET.getBooleanValue());
             return new PlayerLook(playerLook.getYaw(), currentPitch);
         }
         return playerLook;

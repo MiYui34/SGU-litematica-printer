@@ -225,12 +225,6 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 .defaultValue(false)
                 .build();
 
-        // 精确状态放置：蘑菇柄的六个连接位、藤蔓的附着面这类状态原版放置包表达不了，
-        // 改由装了本模组服务端部分的服务器按投影状态直接落块。服务端没装或关闭该功能时自动退回原版放置。
-        public static final ConfigBoolean EXACT_PLACEMENT = bool("exactPlacement")
-                .defaultValue(true)
-                .build();
-
         // 快捷潜影盒 - 开关
         public static final ConfigBoolean QUICK_SHULKER = bool("quickShulker")
                 .defaultValue(false)
@@ -259,8 +253,7 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 RTT_ADAPTIVE_INTERVAL,
                 RTT_SAFETY_PERCENT,
                 FALLING_CHECK,
-                PRINT_USE_PACKET,
-                EXACT_PLACEMENT
+                PRINT_USE_PACKET
         );
     }
 

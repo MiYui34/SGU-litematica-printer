@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -102,9 +103,9 @@ public final class ActionBroker implements RuntimeComponent, ActionPort {
         return this.delegate.setExpectedStackPredicate(expectedStackPredicate);
     }
 
-    /** 标记下一次发送为「按精确状态放置」。见 {@code ActionManager#setExactPlacement}。 */
-    public boolean setExactPlacement(@NotNull BlockPos pos, @NotNull net.minecraft.world.level.block.state.BlockState state) {
-        return this.delegate.setExactPlacement(pos, state);
+    @Override
+    public void setPlacementContext(BlockPos pos, BlockState beforeState, BlockState expectedState) {
+        this.delegate.setPlacementContext(pos, beforeState, expectedState);
     }
 
     public SendResult sendQueue(@Nullable LocalPlayer player) {

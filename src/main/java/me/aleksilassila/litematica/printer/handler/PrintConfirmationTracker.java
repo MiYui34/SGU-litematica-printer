@@ -14,10 +14,21 @@ final class PrintConfirmationTracker {
     private final Map<BlockPos, PendingBlockState> pendingStates = new LinkedHashMap<>();
 
     void track(BlockPos pos, BlockState expectedState, long sentTick, int timeoutTicks) {
+        PendingBlockState previous = this.pendingStates.get(pos);
         this.pendingStates.put(
                 pos.immutable(),
-                new PendingBlockState(expectedState, sentTick + timeoutTicks)
+                new PendingBlockState(expectedState, sentTick + timeoutTicks,
+                        previous == null ? -1 : previous.sequence())
         );
+    }
+
+    void trackGuarded(BlockPos pos, BlockState expectedState, long sentTick, int timeoutTicks, int sequence) {
+        this.pendingStates.put(pos.immutable(), new PendingBlockState(expectedState, sentTick + timeoutTicks, sequence));
+    }
+
+    boolean isGuarded(BlockPos pos) {
+        PendingBlockState pending = this.pendingStates.get(pos);
+        return pending != null && pending.sequence() >= 0;
     }
 
     boolean isPending(BlockPos pos) {
@@ -32,7 +43,8 @@ final class PrintConfirmationTracker {
         }
         this.pendingStates.put(
                 pos.immutable(),
-                new PendingBlockState(pending.expectedState(), currentTick + timeoutTicks)
+                new PendingBlockState(pending.expectedState(),
+                        Math.max(pending.expireTick(), currentTick + timeoutTicks), pending.sequence())
         );
         return true;
     }
@@ -44,6 +56,21 @@ final class PrintConfirmationTracker {
     }
 
     Resolution resolve(BlockPos pos, BlockState authoritativeState) {
+        if (this.isGuarded(pos)) {
+            return Resolution.NOT_TRACKED; // May be a forced update for an earlier/neighbouring click.
+        }
+        return this.resolveTracked(pos, authoritativeState);
+    }
+
+    Resolution resolveGuarded(BlockPos pos, int sequence, BlockState authoritativeState) {
+        PendingBlockState pending = this.pendingStates.get(pos);
+        if (pending == null || pending.sequence() != sequence) {
+            return Resolution.NOT_TRACKED;
+        }
+        return this.resolveTracked(pos, authoritativeState);
+    }
+
+    private Resolution resolveTracked(BlockPos pos, BlockState authoritativeState) {
         PendingBlockState pending = this.pendingStates.remove(pos);
         if (pending == null) {
             return Resolution.NOT_TRACKED;
@@ -82,6 +109,6 @@ final class PrintConfirmationTracker {
         MISMATCHED
     }
 
-    private record PendingBlockState(BlockState expectedState, long expireTick) {
+    private record PendingBlockState(BlockState expectedState, long expireTick, int sequence) {
     }
 }

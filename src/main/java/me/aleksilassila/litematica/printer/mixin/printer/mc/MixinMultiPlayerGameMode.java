@@ -4,6 +4,7 @@ import me.aleksilassila.litematica.printer.interaction.MiningInteractionControll
 import me.aleksilassila.litematica.printer.interaction.MiningInteractionPort;
 import me.aleksilassila.litematica.printer.mixin_extension.BlockBreakResult;
 import me.aleksilassila.litematica.printer.mixin_extension.MultiPlayerGameModeExtension;
+import me.aleksilassila.litematica.printer.network.client.GuardedPlacementClient;
 import me.aleksilassila.litematica.printer.utils.minecraft.NetworkUtils;
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
 import net.minecraft.client.Minecraft;
@@ -14,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
@@ -24,6 +26,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Thin Minecraft field bridge. Mining policy and state transitions live outside the Mixin. */
@@ -94,11 +97,17 @@ public abstract class MixinMultiPlayerGameMode implements MultiPlayerGameModeExt
         this.ensureHasSentCarriedItem();
         if (!this.minecraft.level.getWorldBorder().isWithinBounds(hit.getBlockPos())) return InteractionResult.FAIL;
         //#if MC > 11802
-        NetworkUtils.sendPacket(sequence -> new ServerboundUseItemOnPacket(hand, hit, sequence));
+        NetworkUtils.sendPacket(sequence -> GuardedPlacementClient.wrap(new ServerboundUseItemOnPacket(hand, hit, sequence)));
         //#else
         //$$ NetworkUtils.sendPacket(sequence -> new ServerboundUseItemOnPacket(hand, hit));
         //#endif
         return InteractionResult.PASS;
+    }
+
+    @ModifyArg(method = "startPrediction", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/multiplayer/ClientPacketListener;send(Lnet/minecraft/network/protocol/Packet;)V"), index = 0)
+    private Packet<?> litematica_printer$guardPredictedClick(Packet<?> packet) {
+        return GuardedPlacementClient.wrap(packet);
     }
 
     @Override public Minecraft client() { return this.minecraft; }

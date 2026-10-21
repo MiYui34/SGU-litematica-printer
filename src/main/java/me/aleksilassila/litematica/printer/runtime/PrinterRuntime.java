@@ -1,5 +1,6 @@
 package me.aleksilassila.litematica.printer.runtime;
 
+import me.aleksilassila.litematica.printer.Reference;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeEpoch;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeEvent;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeEventBus;
@@ -47,6 +48,9 @@ public final class PrinterRuntime {
     private Object connectionIdentity;
     private Object disconnectedConnection;
     private long currentTick = Long.MIN_VALUE;
+    private static final long SLOW_TICK_WARN_NANOS = 25_000_000L;
+    private static final long SLOW_TICK_LOG_INTERVAL_NANOS = 5_000_000_000L;
+    private long lastSlowTickLogNanos;
     private boolean resetting;
     private MaterialRequestCoordinator materialRequests;
     private final FeatureModuleSet modules;
@@ -203,6 +207,7 @@ public final class PrinterRuntime {
     }
 
     public void tick(Minecraft client) {
+        long tickStartNanos = System.nanoTime();
         Object currentLevel = client.level;
         Object currentConnection = client.getConnection();
         this.currentTick = currentLevel == null ? Long.MIN_VALUE : client.level.getGameTime();
@@ -220,7 +225,22 @@ public final class PrinterRuntime {
         }
         this.interactionUtils.preprocess();
         this.interactionUtils.onTick();
+        long modulesStartNanos = System.nanoTime();
         this.modules.tick();
+        long now = System.nanoTime();
+        this.reportSlowTick(tickStartNanos, modulesStartNanos, now);
+    }
+
+    /** 打印量过大时给出可定位的日志（每 5 秒最多一条），避免用户只能描述「卡顿」。 */
+    private void reportSlowTick(long tickStartNanos, long modulesStartNanos, long nowNanos) {
+        long totalNanos = nowNanos - tickStartNanos;
+        if (totalNanos < SLOW_TICK_WARN_NANOS
+                || tickStartNanos - this.lastSlowTickLogNanos < SLOW_TICK_LOG_INTERVAL_NANOS) {
+            return;
+        }
+        this.lastSlowTickLogNanos = tickStartNanos;
+        Reference.LOGGER.warn("[print] slow client tick: {} ms (feature modules {} ms)",
+                totalNanos / 1_000_000L, (nowNanos - modulesStartNanos) / 1_000_000L);
     }
 
     /** Connection mixins also run for LAN peers and on Netty threads. Resolve ownership on the client thread. */

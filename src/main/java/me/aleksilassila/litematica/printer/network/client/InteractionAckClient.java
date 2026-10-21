@@ -44,7 +44,7 @@ public final class InteractionAckClient {
         if (runtime == null) {
             return;
         }
-        if (!runtime.hudStats().isPrintPlacementPending(pos)) {
+        if (!runtime.hudStats().isPrintPlacementPending(pos) || runtime.hudStats().isGuardedPrintPlacement(pos)) {
             return;
         }
         runtime.hudStats().extendPrintPlacement(pos);
@@ -56,7 +56,8 @@ public final class InteractionAckClient {
             return;
         }
         ClientLevel level = client.level;
-        if (level == null || !runtime.hudStats().isPrintPlacementPending(pos)) {
+        if (level == null || !runtime.hudStats().isPrintPlacementPending(pos)
+                || runtime.hudStats().isGuardedPrintPlacement(pos)) {
             return;
         }
         runtime.hudStats().recordFailure(HudStatsManager.Mode.PRINT, HudStatus.INTERACTION_REJECTED);

@@ -103,6 +103,34 @@ public final class HudStatsManager implements RuntimeComponent {
         return this.printConfirmationTracker.isPending(pos);
     }
 
+    public boolean isGuardedPrintPlacement(BlockPos pos) {
+        return pos != null && this.printConfirmationTracker.isGuarded(pos);
+    }
+
+    public void trackGuardedPlacement(BlockPos pos, BlockState expectedState, int sequence) {
+        this.printConfirmationTracker.trackGuarded(
+                pos, expectedState, this.tickClock.getAsLong(), this.getConfirmationTimeoutTicks(), sequence);
+    }
+
+    public void confirmGuardedPlacement(BlockPos pos, int sequence, BlockState state, boolean processed) {
+        BlockState expectedState = this.printConfirmationTracker.expectedState(pos);
+        PrintConfirmationTracker.Resolution resolution = this.printConfirmationTracker.resolveGuarded(pos, sequence, state);
+        if (resolution == PrintConfirmationTracker.Resolution.NOT_TRACKED || this.client.level == null) {
+            return;
+        }
+        RuntimeAccess.get().scanEngine().invalidate(pos);
+        if (resolution == PrintConfirmationTracker.Resolution.MATCHED) {
+            this.stats.get(Mode.PRINT).recordConfirmedUnit(this.tickClock.getAsLong(), 1);
+        } else {
+            this.logDiagnostic("sequenced placement {} at {}: world has {}, expected {} (processed={})",
+                    sequence, pos, state, expectedState, processed);
+            this.recordFailure(Mode.PRINT, HudStatus.INTERACTION_REJECTED);
+            RuntimeAccess.get().cooldownUtils().setCooldown(
+                    this.client.level, "print", pos,
+                    Math.max(1, me.aleksilassila.litematica.printer.utils.ConfigUtils.getPlaceCooldown()));
+        }
+    }
+
     /**
      * Keeps an in-flight placement tracked for one more timeout window. The server only
      * acknowledges that it accepted the click; the authoritative block change still has to arrive
@@ -149,8 +177,9 @@ public final class HudStatsManager implements RuntimeComponent {
                 && this.client.level != null) {
             this.logDiagnostic("placement landed as {} at {} (expected {})",
                     authoritativeState, pos, expectedState);
-            RuntimeAccess.get().cooldownUtils().removeCooldown(
-                    this.client.level, "print", pos);
+            RuntimeAccess.get().cooldownUtils().setCooldown(
+                    this.client.level, "print", pos,
+                    Math.max(1, me.aleksilassila.litematica.printer.utils.ConfigUtils.getPlaceCooldown()));
         }
 
 

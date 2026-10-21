@@ -4,7 +4,9 @@
 **Yur1Ca/litematica-printer** 的框架上。目标：**只保留打印**，放置与切换物品逻辑与原服务端打印机一致。
 
 客户端与服务端的连接方式沿用 SGU 的做法：**同一个 jar**（`environment: "*"`），客户端入口负责打印，
-主入口注册自定义通道。所有原版数据包（放置、破坏、容器点击）的格式与流向都没有改动。
+主入口注册自定义通道。新版两端互联时，打印点击带上规划时的目标/支撑块/主手快照，
+服务端检查通过后再调用原版 `handleUseItemOn`；原版权限、距离与放置规则仍然生效。
+破坏、容器点击，以及连接旧服务端时的放置数据包保持原路径。
 
 - 基线：Yur1Ca/litematica-printer master（0.7.2.1-Hana）
 - 参考：ref-sgu（SGU dev2）、ref-yurica（原框架）
@@ -62,6 +64,21 @@
 4. **水/海草**：由 `WaterPrintTask` + `WaterGuide` 承担（SGU 是独立 `FluidGuide`/`SeagrassGuide`）。
 5. 框架额外能力保留：保留耗材（`printReserveItems`）、RTT 自适应间隔、`printSortTargets`/`printSortSides`。
 
+### 3.1 性能：每个 tick 的打印工作量有硬上限
+
+不要把 `每刻放置方块数` 设成 0 之后期待「越快越好」——那样每个 tick 会把队列里能放的方块一次性发完，
+客户端 tick 被拉长到几十毫秒，表现就是打印时一卡一卡地掉帧。当前实现有三道闸：
+
+1. `扫描时间预算`（`scanTimeBudgetMs`，默认 2ms）：每 tick 打印机的主线程耗时预算。
+   设 `每刻放置方块数 = 0`（不限）时，**动作耗时也计入这个预算**，所以单 tick 大约只做 2ms 的活。
+2. 硬上限 = 预算 × 8（默认 16ms）：任何配置下单个 tick 的打印工作都不会超过这个值。
+3. 投影「手持物品高亮」的整张重排最多 20 tick 一次（材料出入会让可用物品集合频繁抖动，
+   逐 tick 重排所有已加载的投影区块是另一处明显掉帧源）。
+
+只有在确实需要更高吞吐时才调大 `scanTimeBudgetMs`（上限 10ms），并且优先把 `每刻放置方块数`
+设成 2–4 这样的小数值，比设 0 更稳。若仍然卡顿，日志里会出现
+`[print] slow client tick: N ms (feature modules M ms)`（每 5 秒最多一条），可据此判断是模块内部还是外部（渲染）导致。
+
 ## 4. 构建
 
 前置：
@@ -92,15 +109,19 @@ Fabric Loader + Fabric API + MaLiLib + Litematica（版本见各 `versions/*/gra
 
 ### 6.1 通道
 
-- `litematica-printer:interaction_ack`（S2C）：`(pos, kind, accepted)`，一次放置/破坏在服务端的处理结果。
-- `litematica-printer:server_hello`（S2C）：`(exactPlacement, interactionAck)`，玩家登录时告知客户端本服支持哪些能力。
-- `litematica-printer:exact_place`（C2S）：`(pos, block, properties)`，按投影的精确状态落块（见 6.5）。
-
+`litematica-printer:interaction_ack`（S2C）：`(pos, kind, accepted)`，一次放置/破坏在服务端的处理结果。
 编码器在 `PrinterNetworking.initCommon()` 登记，客户端在 `initClient()` 注册收包器。
+
+新版另有两个通道（保持旧通道编解码不变）：
+
+- `guarded_use_item_on_v1`（C2S）：原版点击包、批次号、实际目标坐标、规划时的目标及被点击方块状态、主手物品与槽位。
+- `guarded_placement_ack_v1`（S2C）：原版点击序号、实际目标坐标、处理后的权威目标状态、是否通过过期检查。
+
+客户端通过 C2S 通道可用性自动启用校验；旧服务端继续走原版点击。新版客户端与新版服务端需要一起更新。
 
 ### 6.2 放置 / 破坏回执
 
-`MixinServerPlayerGameMode` 在 `useItemOn`、`destroyBlock` 返回时发回执（`accepted` 判定：
+兼容旧客户端的 `MixinServerPlayerGameMode` 在 `useItemOn`、`destroyBlock` 返回时发回执（`accepted` 判定：
 `InteractionResult != FAIL` / `destroyBlock` 返回 true）。客户端两侧都用上：
 
 - **被拒绝**：记一次失败、让扫描缓存失效、把该格放进 `placeCooldown` 冷却，避免对着保护区/越权位置每秒重试几十次。
@@ -113,47 +134,39 @@ Fabric Loader + Fabric API + MaLiLib + Litematica（版本见各 `versions/*/gra
 成功回执不改变世界状态 —— 方块的权威状态仍以区块更新为准。服务端未装本模组时 `canSend` 为 false，客户端行为与
 纯客户端版完全一致（只靠本地预测与超时兜底）。
 
-### 6.3 精确状态放置（蘑菇柄 / 藤蔓这类方块）
+新版打印点击使用 `ServerGuardedPlacement`：
 
-原版放置包只能表达「玩家拿着什么、点了哪个面」，方块状态由服务端的
-`getStateForPlacement` 推导。蘑菇柄（`minecraft:mushroom_stem`）的
-`up/down/north/east/south/west` 六个连接位没有任何放置上下文能产生，因此无论客户端怎么摆视角，
-原版路径都只能放成六个 `true` 的默认态 —— 这就是投影里蘑菇柄「状态错误」的唯一原因。
+1. 目标或被点击方块已变化、主手材料/组件或选中槽位与客户端快照不同，则不执行点击，回发当前状态及背包同步。
+   因此过期的“对空气放置”不会落到已经放好的实心方块上，再向相邻格多放一次。
+2. 通过检查的点击交给原版包处理器；不直接设置投影状态、不增加距离或权限。
+3. 回执使用真实放置目标及原版序号，解决贴着支撑块放置时回执坐标与 pending 坐标不一致的问题。
+4. 普通区块更新及旧通道回执不能解除有序号的等待；仅最后一次点击的回执可以结算该目标，
+   避免邻居强制更新或连续点击的中间状态提前解除等待。失败/超时保留冷却。
+5. 音符盒等需要有意连续点击的动作共享一个批次，后续点击按上一点击的服务端结果校验；首个点击失败时，后续点击也会被拒绝。
 
-SGU 靠 Litematica 的 easy-place 协议把状态编码进命中向量，但那要求服务端装了能解码的插件
-（Servux / Carpet）。本工程改为自建 C2S 通道：客户端把 `block` 的注册名与完整属性串
-（`north=false,south=true,...`）发给服务端，服务端 **校验后直接 `setBlock`**：
-
-- 服务端校验：配置开关、区块已加载、距离（`blockInteractionRange + 1`）、主手物品与目标方块一致、
-  目标位置可替换、`state.canSurvive`、属性必须与方块注册的属性一一对应（多一个、少一个、值非法都拒绝）。
-- 通过后 `level.setBlock(pos, state, Block.UPDATE_ALL)`，播放放置音效、挥手、非创造扣一个物品，
-  再走 `interaction_ack` 回报成功；被拒绝也回报 `accepted=false`，客户端照常记失败并冷却。
-- 只对「原版放置表达不了」的方块启用（`ExactPlacementUtils.isEligible`：`HugeMushroomBlock`，
-  或属性集合恰为六个连接位布尔值的方块）；普通方块仍走原版放置，行为与 SGU 一致。
-- 服务端没装本模组、关了 `exactPlacement`、或客户端没收到 hello 时自动退回原版放置，不需要改任何配置。
-
-### 6.4 服务端配置
+### 6.3 服务端配置
 
 `config/litematica-printer-server.json`（服务端独立配置，不依赖 MaLiLib）：
 
 ```json
 {
-  "exactPlacement": true,
   "interactionAck": true
 }
 ```
 
-### 6.5 安全边界
+`interactionAck` 控制旧通道的提示回执。新版有序号回执属于校验请求的必需响应，不受此开关影响。
+
+### 6.4 安全边界
 
 - 回执只发送给装有本模组客户端的玩家（`ServerPlayNetworking.canSend`）；
-- 回执只是把原版已经发生的放置/破坏结果告知发起者，不引入任何新的服务端权限；
-- 精确放置仍然受原版交互距离限制，且必须手持对应方块物品、目标可替换，等价于「玩家自己点了一下」。
+- 不引入任何新的服务端权限：回执只是把原版已经发生的放置/破坏结果告知发起者。
 
 ## 7. 高延迟服务器上的建议设置
 
-远端服务器（RTT 上百毫秒）上，「多放 / 错放」几乎都来自同一个机制：客户端本地世界还没收到方块更新，
+远端服务器（RTT 上百毫秒）上，「多放 / 错放」可能来自客户端本地世界还没收到方块更新，
 就再次对同一格发包，第二下点到刚放好的方块上 —— 对门、活板门、拉杆、箱子这类可交互方块就是「切换状态」。
-本工程已在代码层做了兜底（等待确认窗口、接受回执延长窗口、超时保留冷却），但配置上仍建议：
+新版两端还会在服务端拦截这类过期请求；它不能修复所有 guide 的朝向算法或代替 Servux 的轻松放置协议。
+配置上仍建议：
 
 | 配置 | 建议 | 原因 |
 | --- | --- | --- |

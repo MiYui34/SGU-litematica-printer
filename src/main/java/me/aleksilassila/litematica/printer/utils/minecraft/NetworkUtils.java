@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ServerGamePacketListener;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 public class NetworkUtils {
@@ -23,7 +22,7 @@ public class NetworkUtils {
 
     public static void sendPacket(PredictiveAction packetCreator) {
         if (client.level instanceof SequenceExtension sequenceExtension) {
-            Packet<ServerGamePacketListener> packet = sequenceExtension.litematica_printer3$predict(packetCreator);
+            Packet<?> packet = sequenceExtension.litematica_printer3$predict(packetCreator);
             NetworkUtils.sendPacket(packet);
         }
     }
@@ -73,7 +72,7 @@ public class NetworkUtils {
     }
 
     public interface SequenceExtension {
-        default Packet<ServerGamePacketListener> litematica_printer3$predict(PredictiveAction action) {
+        default Packet<?> litematica_printer3$predict(PredictiveAction action) {
             return action.predict(0);
         }
     }

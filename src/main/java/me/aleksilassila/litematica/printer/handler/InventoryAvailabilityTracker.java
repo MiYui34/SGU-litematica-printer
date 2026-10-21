@@ -31,6 +31,11 @@ public final class InventoryAvailabilityTracker implements RuntimeComponent {
     private boolean availabilityTracking;
     private long gainRevision;
     private volatile long availabilityRevision;
+    /** 可视高亮刷新最快间隔：材料出入会让可用集频繁抖动，逐 tick 重排整张投影会明显掉帧。 */
+    private static final long SCHEMATIC_REFRESH_INTERVAL_TICKS = 20L;
+    private long tickCounter;
+    private long lastSchematicRefreshTick = Long.MIN_VALUE;
+    private boolean schematicRefreshPending;
 
     public InventoryAvailabilityTracker() {
     }
@@ -40,6 +45,7 @@ public final class InventoryAvailabilityTracker implements RuntimeComponent {
             this.reset();
             return;
         }
+        this.tickCounter++;
         this.currentCounts.clear();
         boolean trackAvailability = Configs.Core.RENDER_ONLY_HOLDING_ITEMS.getBooleanValue();
         if (trackAvailability) {
@@ -96,6 +102,20 @@ public final class InventoryAvailabilityTracker implements RuntimeComponent {
             this.previousAvailableItems.clear();
             this.availableItemsSnapshot = Collections.emptySet();
         }
+        this.flushSchematicRefreshIfDue();
+    }
+
+    private void flushSchematicRefreshIfDue() {
+        if (!this.schematicRefreshPending) {
+            return;
+        }
+        if (this.lastSchematicRefreshTick != Long.MIN_VALUE
+                && this.tickCounter - this.lastSchematicRefreshTick < SCHEMATIC_REFRESH_INTERVAL_TICKS) {
+            return;
+        }
+        this.schematicRefreshPending = false;
+        this.lastSchematicRefreshTick = this.tickCounter;
+        this.refreshSchematicRenders();
     }
 
     private static boolean isShulkerBox(ItemStack stack) {
@@ -116,6 +136,10 @@ public final class InventoryAvailabilityTracker implements RuntimeComponent {
     }
 
     private void scheduleSchematicRenderRefresh() {
+        this.schematicRefreshPending = true;
+    }
+
+    private void refreshSchematicRenders() {
         WorldSchematic schematic = SchematicWorldHandler.getSchematicWorld();
         if (schematic == null) {
             return;
@@ -157,6 +181,7 @@ public final class InventoryAvailabilityTracker implements RuntimeComponent {
         this.availableItemsSnapshot = Collections.emptySet();
         this.initialized = false;
         this.availabilityTracking = false;
+        this.schematicRefreshPending = false;
         this.gainRevision++;
         this.availabilityRevision++;
     }
