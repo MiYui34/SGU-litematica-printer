@@ -15,12 +15,12 @@ import net.minecraft.core.BlockPos;
 /**
  * 服务端回执的客户端处理。
  *
- * <p>只有「服务端明确拒绝一次我们正在等待确认的放置」才需要动作：那一格在本地看是空的、
- * 在服务端根本没放上去（越权、保护区、反作弊拦截等），继续按原节奏重试只会白刷包。
- * 处理办法是把这一格踢进冷却并让扫描缓存失效，等冷却结束再试一次。</p>
+ * <p>被拒绝时：把这一格踢进冷却并让扫描缓存失效 —— 服务端根本没放上去（越权、保护区、反作弊拦截、
+ * 距离校验失败等），继续按原节奏重试只会白刷包。</p>
  *
- * <p>成功回执不做任何事：方块的权威状态最终仍以区块更新为准，提前「确认」反而会掩盖
- * 真正的不同步。</p>
+ * <p>被接受时：延长这一格的「等待确认」窗口。点击被接受只说明服务端跑完了 {@code useItemOn}，
+ * 权威方块状态仍要等区块更新；延长窗口可以避免本地世界还没收到更新就再点一次同一格
+ * （那一下会点到刚放好的方块上，把门、拉杆、箱子之类的可交互方块切换成错误状态）。</p>
  */
 public final class InteractionAckClient {
 
@@ -28,18 +28,31 @@ public final class InteractionAckClient {
     }
 
     public static void receive(InteractionAckPayload payload, ClientPlayNetworking.Context context) {
-        if (payload.accepted() || payload.kind() != InteractionAckPayload.KIND_PLACE) {
+        if (payload.kind() != InteractionAckPayload.KIND_PLACE) {
             return;
         }
         Minecraft client = context.client();
-        client.execute(() -> onRejectedPlacement(client, payload.pos()));
+        if (payload.accepted()) {
+            client.execute(() -> onAcceptedPlacement(client, payload.pos()));
+        } else {
+            client.execute(() -> onRejectedPlacement(client, payload.pos()));
+        }
+    }
+
+    private static void onAcceptedPlacement(Minecraft client, BlockPos pos) {
+        PrinterRuntime runtime = runtimeOrNull(client);
+        if (runtime == null) {
+            return;
+        }
+        if (!runtime.hudStats().isPrintPlacementPending(pos)) {
+            return;
+        }
+        runtime.hudStats().extendPrintPlacement(pos);
     }
 
     private static void onRejectedPlacement(Minecraft client, BlockPos pos) {
-        PrinterRuntime runtime;
-        try {
-            runtime = RuntimeAccess.get();
-        } catch (IllegalStateException notInstalled) {
+        PrinterRuntime runtime = runtimeOrNull(client);
+        if (runtime == null) {
             return;
         }
         ClientLevel level = client.level;
@@ -50,5 +63,16 @@ public final class InteractionAckClient {
         runtime.scanEngine().invalidate(pos);
         runtime.cooldownUtils().setCooldown(
                 level, PrintHandler.NAME, pos, Math.max(1, ConfigUtils.getPlaceCooldown()));
+    }
+
+    private static PrinterRuntime runtimeOrNull(Minecraft client) {
+        if (client.level == null) {
+            return null;
+        }
+        try {
+            return RuntimeAccess.get();
+        } catch (IllegalStateException notInstalled) {
+            return null;
+        }
     }
 }

@@ -18,6 +18,12 @@ import java.util.function.LongSupplier;
 public final class HudStatsManager implements RuntimeComponent {
     private static final long RATE_WINDOW_NANOS = 1_000_000_000L;
     private static final int DEFAULT_CONFIRM_TIMEOUT_TICKS = 10;
+    /**
+     * Packet placement never applies a local prediction, so the client world stays stale until the
+     * server echoes the block change. Wait at least a second before declaring a placement lost;
+     * otherwise a laggy server turns every confirmation into a duplicate click.
+     */
+    private static final int PACKET_MODE_CONFIRM_FLOOR_TICKS = 20;
     private static final int RTT_CONFIRM_SAFETY_TICKS = 2;
     private static final int FALLBACK_CONFIRM_CHECKS_PER_MODE = 8;
 
@@ -96,6 +102,18 @@ public final class HudStatsManager implements RuntimeComponent {
         return this.printConfirmationTracker.isPending(pos);
     }
 
+    /**
+     * Keeps an in-flight placement tracked for one more timeout window. The server only
+     * acknowledges that it accepted the click; the authoritative block change still has to arrive
+     * before the position may be printed again.
+     */
+    public void extendPrintPlacement(BlockPos pos) {
+        if (pos == null) {
+            return;
+        }
+        this.printConfirmationTracker.extend(pos, this.tickClock.getAsLong(), this.getConfirmationTimeoutTicks());
+    }
+
     public void tick() {
         long now = this.tickClock.getAsLong();
         if (this.lastFallbackFlushTick == now) {
@@ -147,11 +165,14 @@ public final class HudStatsManager implements RuntimeComponent {
     }
 
     private int getConfirmationTimeoutTicks() {
-        return confirmationTimeoutTicksFor(
+        int base = confirmationTimeoutTicksFor(
                 this.rttReplayController == null
                         ? 0
                         : this.rttReplayController.getExtraIntervalTicks(100)
         );
+        return me.aleksilassila.litematica.printer.config.Configs.Placement.PRINT_USE_PACKET.getBooleanValue()
+                ? Math.max(base, PACKET_MODE_CONFIRM_FLOOR_TICKS)
+                : base;
     }
 
     private void flushConfirmedActions(long now, int maxChecksPerMode) {
@@ -165,8 +186,13 @@ public final class HudStatsManager implements RuntimeComponent {
         List<BlockPos> expired = this.printConfirmationTracker.expire(now, maxChecks);
         for (BlockPos pos : expired) {
             RuntimeAccess.get().scanEngine().invalidate(pos);
-            RuntimeAccess.get().cooldownUtils().removeCooldown(
-                    client.level, "print", pos);
+            // An expired entry means no block change ever arrived. Re-clicking immediately would
+            // hit a block the server may already have placed (toggling doors, levers, chests and
+            // other interactive blocks), so keep the position on cooldown instead of clearing it.
+            this.recordFailure(Mode.PRINT, HudStatus.WAITING_SERVER_CONFIRM);
+            RuntimeAccess.get().cooldownUtils().setCooldown(
+                    client.level, "print", pos,
+                    Math.max(1, me.aleksilassila.litematica.printer.utils.ConfigUtils.getPlaceCooldown()));
         }
     }
 

@@ -23,6 +23,19 @@ final class PrintConfirmationTracker {
         return this.pendingStates.containsKey(pos);
     }
 
+    /** Re-arms the timeout of an already tracked placement without changing its expected state. */
+    boolean extend(BlockPos pos, long currentTick, int timeoutTicks) {
+        PendingBlockState pending = this.pendingStates.get(pos);
+        if (pending == null) {
+            return false;
+        }
+        this.pendingStates.put(
+                pos.immutable(),
+                new PendingBlockState(pending.expectedState(), currentTick + timeoutTicks)
+        );
+        return true;
+    }
+
     Resolution resolve(BlockPos pos, BlockState authoritativeState) {
         PendingBlockState pending = this.pendingStates.remove(pos);
         if (pending == null) {
