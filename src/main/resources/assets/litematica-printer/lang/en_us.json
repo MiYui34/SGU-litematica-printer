@@ -128,6 +128,8 @@
   "litematica-printer.config.placeCooldown.desc": "Cooldown time after placing blocks at the same location (in game ticks). Retry placement operation only after cooldown ends.\n§c§lDo not set to 0 unless necessary, otherwise it will cause placing extra blocks, inability to place correctly and other issues!§r",
   "litematica-printer.config.placeUsePacket": "Packet placement",
   "litematica-printer.config.placeUsePacket.desc": "Disables local prediction for placement and sends a ServerboundUseItemOnPacket instead. Matches the original server-side printer packet mode. Off by default.",
+  "litematica-printer.config.exactPlacement": "Exact placement",
+  "litematica-printer.config.exactPlacement.desc": "Asks a server running this mod to place the exact schematic state. Needed for mushroom stems and vines, whose states vanilla placement cannot produce. Falls back to vanilla placement when the server does not support it.",
   "litematica-printer.config.breakUsePacket": "Packet breaking",
   "litematica-printer.config.breakUsePacket.desc": "Disables local prediction for breaking and sends a ServerboundPlayerActionPacket instead. Matches the original server-side printer packet mode. Off by default.",
   "litematica-printer.config.placeRttAdaptiveInterval": "RTT Adaptive Interval",

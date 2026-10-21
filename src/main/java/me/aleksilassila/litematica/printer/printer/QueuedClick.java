@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +30,10 @@ final class QueuedClick {
     Consumer<ActionManager.SendResult> completionListener;
     @Nullable
     Predicate<ItemStack> expectedStackPredicate;
+    @Nullable
+    BlockPos exactPlacementPos;
+    @Nullable
+    BlockState exactPlacementState;
 
     QueuedClick(
             @NotNull BlockPos target,
@@ -64,5 +69,10 @@ final class QueuedClick {
 
     void expectStack(@Nullable Predicate<ItemStack> expectedStackPredicate) {
         this.expectedStackPredicate = expectedStackPredicate;
+    }
+
+    void exactPlacement(@NotNull BlockPos pos, @NotNull BlockState state) {
+        this.exactPlacementPos = pos;
+        this.exactPlacementState = state;
     }
 }

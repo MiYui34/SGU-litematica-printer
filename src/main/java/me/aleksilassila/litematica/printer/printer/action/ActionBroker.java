@@ -102,6 +102,11 @@ public final class ActionBroker implements RuntimeComponent, ActionPort {
         return this.delegate.setExpectedStackPredicate(expectedStackPredicate);
     }
 
+    /** 标记下一次发送为「按精确状态放置」。见 {@code ActionManager#setExactPlacement}。 */
+    public boolean setExactPlacement(@NotNull BlockPos pos, @NotNull net.minecraft.world.level.block.state.BlockState state) {
+        return this.delegate.setExactPlacement(pos, state);
+    }
+
     public SendResult sendQueue(@Nullable LocalPlayer player) {
         if (this.activeTicket != null) {
             if (!this.activeTicket.canSend(this.runtime.epoch(), System.nanoTime())) {

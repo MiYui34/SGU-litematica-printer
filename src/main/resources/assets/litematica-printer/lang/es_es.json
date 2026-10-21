@@ -128,6 +128,8 @@
   "litematica-printer.config.placeCooldown.desc": "Tiempo de espera después de colocar bloques en la misma posición (en ticks del juego). Solo se vuelve a intentar la colocación cuando termina la espera.\n§c§l¡No lo establezcas en 0 salvo que sea necesario! Podría colocar bloques de más, impedir una colocación correcta y causar otros problemas.§r",
   "litematica-printer.config.placeUsePacket": "Colocación por paquete",
   "litematica-printer.config.placeUsePacket.desc": "Desactiva la predicción local al colocar y envía un paquete al servidor. Igual que el modo de paquetes de la impresora original. Desactivado por defecto.",
+  "litematica-printer.config.exactPlacement": "Colocación exacta",
+  "litematica-printer.config.exactPlacement.desc": "Pide a un servidor con este mod que coloque el estado exacto del esquemático. Necesario para tallos de champiñón y enredaderas; si el servidor no lo admite, se usa la colocación normal.",
   "litematica-printer.config.breakUsePacket": "Rotura por paquete",
   "litematica-printer.config.breakUsePacket.desc": "Desactiva la predicción local al romper y envía un paquete al servidor. Igual que el modo de paquetes de la impresora original. Desactivado por defecto.",
   "litematica-printer.config.placeRttAdaptiveInterval": "Intervalo adaptativo al RTT",

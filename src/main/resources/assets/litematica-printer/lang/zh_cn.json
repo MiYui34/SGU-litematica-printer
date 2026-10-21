@@ -128,6 +128,8 @@
   "litematica-printer.config.placeCooldown.desc": "同一位置放置方块后的冷却时间(单位为游戏刻)，冷却结束后才会重试放置操作。\n§c§l非必要请勿设置为0，否则会导致多放方块、无法正确放置等问题！§r",
   "litematica-printer.config.placeUsePacket": "数据包放置",
   "litematica-printer.config.placeUsePacket.desc": "关闭原版放置的本地预测，改为直接发送放置数据包。与原服务端打印机的数据包打印行为一致。默认关闭。\n数据包模式下由服务端判定放置结果，可减少幽灵方块，但在高延迟下需要配合放置间隔使用。",
+  "litematica-printer.config.exactPlacement": "精确状态放置",
+  "litematica-printer.config.exactPlacement.desc": "让装有本模组服务端的服务器按投影状态落块。蘑菇柄、藤蔓这类方块的状态原版放置无法表达，需要这个开关；服务端没装本模组或关闭该功能时自动退回原版放置。",
   "litematica-printer.config.breakUsePacket": "数据包破坏",
   "litematica-printer.config.breakUsePacket.desc": "关闭原版破坏的本地预测，改为直接发送破坏数据包。与原服务端打印机的数据包破坏行为一致。默认关闭。",
   "litematica-printer.config.placeRttAdaptiveInterval": "RTT 自适应间隔",

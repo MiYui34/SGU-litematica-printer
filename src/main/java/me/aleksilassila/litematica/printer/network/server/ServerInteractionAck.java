@@ -35,6 +35,16 @@ public final class ServerInteractionAck {
         send(player, pos, InteractionAckPayload.KIND_BREAK, destroyed);
     }
 
+    /**
+     * 一次「精确状态放置」请求的处理结果。
+     *
+     * <p>{@code pos} 就是请求里要放置的那一格（不是被点击的邻居），客户端按它清 pending、
+     * 打冷却，所以被拒绝的格子不会一直被当成「已排队」。</p>
+     */
+    public static void exact(ServerPlayer player, BlockPos pos, boolean accepted) {
+        send(player, pos, InteractionAckPayload.KIND_PLACE, accepted);
+    }
+
     private static void send(ServerPlayer player, BlockPos pos, byte kind, boolean accepted) {
         if (player == null || pos == null) {
             return;

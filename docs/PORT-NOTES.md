@@ -92,7 +92,10 @@ Fabric Loader + Fabric API + MaLiLib + Litematica（版本见各 `versions/*/gra
 
 ### 6.1 通道
 
-`litematica-printer:interaction_ack`（S2C）：`(pos, kind, accepted)`，一次放置/破坏在服务端的处理结果。
+- `litematica-printer:interaction_ack`（S2C）：`(pos, kind, accepted)`，一次放置/破坏在服务端的处理结果。
+- `litematica-printer:server_hello`（S2C）：`(exactPlacement, interactionAck)`，玩家登录时告知客户端本服支持哪些能力。
+- `litematica-printer:exact_place`（C2S）：`(pos, block, properties)`，按投影的精确状态落块（见 6.5）。
+
 编码器在 `PrinterNetworking.initCommon()` 登记，客户端在 `initClient()` 注册收包器。
 
 ### 6.2 放置 / 破坏回执
@@ -110,20 +113,41 @@ Fabric Loader + Fabric API + MaLiLib + Litematica（版本见各 `versions/*/gra
 成功回执不改变世界状态 —— 方块的权威状态仍以区块更新为准。服务端未装本模组时 `canSend` 为 false，客户端行为与
 纯客户端版完全一致（只靠本地预测与超时兜底）。
 
-### 6.3 服务端配置
+### 6.3 精确状态放置（蘑菇柄 / 藤蔓这类方块）
+
+原版放置包只能表达「玩家拿着什么、点了哪个面」，方块状态由服务端的
+`getStateForPlacement` 推导。蘑菇柄（`minecraft:mushroom_stem`）的
+`up/down/north/east/south/west` 六个连接位没有任何放置上下文能产生，因此无论客户端怎么摆视角，
+原版路径都只能放成六个 `true` 的默认态 —— 这就是投影里蘑菇柄「状态错误」的唯一原因。
+
+SGU 靠 Litematica 的 easy-place 协议把状态编码进命中向量，但那要求服务端装了能解码的插件
+（Servux / Carpet）。本工程改为自建 C2S 通道：客户端把 `block` 的注册名与完整属性串
+（`north=false,south=true,...`）发给服务端，服务端 **校验后直接 `setBlock`**：
+
+- 服务端校验：配置开关、区块已加载、距离（`blockInteractionRange + 1`）、主手物品与目标方块一致、
+  目标位置可替换、`state.canSurvive`、属性必须与方块注册的属性一一对应（多一个、少一个、值非法都拒绝）。
+- 通过后 `level.setBlock(pos, state, Block.UPDATE_ALL)`，播放放置音效、挥手、非创造扣一个物品，
+  再走 `interaction_ack` 回报成功；被拒绝也回报 `accepted=false`，客户端照常记失败并冷却。
+- 只对「原版放置表达不了」的方块启用（`ExactPlacementUtils.isEligible`：`HugeMushroomBlock`，
+  或属性集合恰为六个连接位布尔值的方块）；普通方块仍走原版放置，行为与 SGU 一致。
+- 服务端没装本模组、关了 `exactPlacement`、或客户端没收到 hello 时自动退回原版放置，不需要改任何配置。
+
+### 6.4 服务端配置
 
 `config/litematica-printer-server.json`（服务端独立配置，不依赖 MaLiLib）：
 
 ```json
 {
+  "exactPlacement": true,
   "interactionAck": true
 }
 ```
 
-### 6.4 安全边界
+### 6.5 安全边界
 
 - 回执只发送给装有本模组客户端的玩家（`ServerPlayNetworking.canSend`）；
-- 不引入任何新的服务端权限：回执只是把原版已经发生的放置/破坏结果告知发起者。
+- 回执只是把原版已经发生的放置/破坏结果告知发起者，不引入任何新的服务端权限；
+- 精确放置仍然受原版交互距离限制，且必须手持对应方块物品、目标可替换，等价于「玩家自己点了一下」。
 
 ## 7. 高延迟服务器上的建议设置
 

@@ -124,6 +124,8 @@
   "litematica-printer.config.placeCooldown.desc": "同一位置放置方塊後的冷卻時間(單位為遊戲刻)，冷卻結束後才會重試放置操作。\n§c§l非必要請勿設定為0，否則會導致多放方塊、無法正確放置等問題！§r",
   "litematica-printer.config.placeUsePacket": "資料包放置",
   "litematica-printer.config.placeUsePacket.desc": "關閉原版放置的本地預測，改為直接發送放置資料包。與原伺服端印表機的資料包列印行為一致。預設關閉。",
+  "litematica-printer.config.exactPlacement": "精確狀態放置",
+  "litematica-printer.config.exactPlacement.desc": "讓裝有本模組伺服端的伺服器按投影狀態落塊。蘑菇柄、藤蔓這類方塊的狀態原版放置無法表達，需要這個開關；伺服端沒裝本模組或關閉該功能時自動退回原版放置。",
   "litematica-printer.config.breakUsePacket": "資料包破壞",
   "litematica-printer.config.breakUsePacket.desc": "關閉原版破壞的本地預測，改為直接發送破壞資料包。與原伺服端印表機的資料包破壞行為一致。預設關閉。",
   "litematica-printer.config.placeRttAdaptiveInterval": "RTT 自適應間隔",

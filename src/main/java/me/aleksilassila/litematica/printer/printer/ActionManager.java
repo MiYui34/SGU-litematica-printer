@@ -6,7 +6,9 @@ import fi.dy.masa.litematica.util.EasyPlaceUtils;
 import me.aleksilassila.litematica.printer.Reference;
 import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.mixin_extension.MultiPlayerGameModeExtension;
+import me.aleksilassila.litematica.printer.network.client.ExactPlacementSender;
 import me.aleksilassila.litematica.printer.utils.mods.QuickShulkerBridge;
+import me.aleksilassila.litematica.printer.utils.ExactPlacementUtils;
 import me.aleksilassila.litematica.printer.utils.minecraft.DirectionUtils;
 import me.aleksilassila.litematica.printer.utils.InventoryUtils;
 import me.aleksilassila.litematica.printer.utils.minecraft.NetworkUtils;
@@ -18,6 +20,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.AnvilBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -148,6 +151,22 @@ public class ActionManager {
         return true;
     }
 
+    /**
+     * 把当前排队的这次点击标记成「按精确状态放置」。
+     *
+     * <p>只有服务端声明支持、且方块状态无法由原版放置表达时，调用方才会设这个标记。
+     * 设置后 {@link #sendQueue(LocalPlayer)} 会改发状态包，而不是原版放置包。</p>
+     */
+    public boolean setExactPlacement(@NotNull BlockPos pos, @NotNull BlockState state) {
+        if (this.queuedClick == null
+                || !ExactPlacementSender.isAvailable()
+                || !ExactPlacementUtils.isEligible(state)) {
+            return false;
+        }
+        this.queuedClick.exactPlacement(pos, state);
+        return true;
+    }
+
     public SendResult sendQueue(@Nullable LocalPlayer player) {
         QueuedClick click = this.queuedClick;
         if (click == null) {
@@ -158,6 +177,16 @@ public class ActionManager {
         }
         if (shouldDropStaleQueuedClick(player, click)) {
             return this.finish(click, SendResult.STALE_POSITION);
+        }
+        // 精确状态放置：蘑菇柄的六个连接位、藤蔓的附着面这类状态原版放置包表达不了，
+        // 由服务端按投影状态直接落块。服务端校验主手物品/距离/可替换/canSurvive，
+        // 发出即完成本地侧动作；成败由 block update 与回执确认。
+        if (click.exactPlacementPos != null
+                && click.exactPlacementState != null
+                && isHoldingExpectedItem(player, click)
+                && getReserveAllowance(player, click) > 0
+                && ExactPlacementSender.send(click.exactPlacementPos, click.exactPlacementState)) {
+            return this.finish(click, SendResult.SENT);
         }
         if (!needWaitModifyLook && look != null && shouldSendQueuedLook(look)) {
             NetworkUtils.sendLookPacket(player, look);

@@ -124,6 +124,8 @@
   "litematica-printer.config.placeCooldown.desc": "置同一石後須靜候之刻數，期滿方可再置。\n§c§l非必要勿設零，否則恐致多置、誤置之患！§r",
   "litematica-printer.config.placeUsePacket": "封包置方",
   "litematica-printer.config.placeUsePacket.desc": "廢本地預測之置，逕發置方之封包。與舊服務端印者同。默认閉。",
+  "litematica-printer.config.exactPlacement": "精準置狀",
+  "litematica-printer.config.exactPlacement.desc": "使裝本模之僕者按投影之狀置塊。菇柄、藤之類，原版置之不能達其狀，須此。若僕者未裝或閉之，則復歸原版置法。",
   "litematica-printer.config.breakUsePacket": "封包破方",
   "litematica-printer.config.breakUsePacket.desc": "廢本地預測之破，逕發破方之封包。與舊服務端印者同。默认閉。",
   "litematica-printer.config.placeRttAdaptiveInterval": "延遲自調之息",
