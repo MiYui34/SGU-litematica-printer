@@ -3,15 +3,13 @@
   "minVersion": "0.8",
   "package": "me.aleksilassila.litematica.printer.mixin",
   "compatibilityLevel": "${compatibility_level}",
-  "mixins": [
+  "client": [
     "printer.litematica.EasyPlaceUtilsAccessor",
     "printer.litematica.InventoryUtilsAccessor",
     "printer.litematica.MixinInventoryUtils",
     ${void_warehouse_litematica_mixins}
     "printer.litematica.MixinChunkRendererSchematicVbo",
-    "printer.litematica.MixinChunkRenderDispatcherSchematic"
-  ],
-  "client": [
+    "printer.litematica.MixinChunkRenderDispatcherSchematic",
     "printer.litematica.gui.MixinLitematicaGuiMainMenu"
   ],
   "injectors": {

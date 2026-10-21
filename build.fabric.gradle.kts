@@ -129,6 +129,12 @@ dependencies {
         }
     }
 
+    // 开发环境跑客户端时 ChestTracker 需要 yacl；把 jar 放进 libs/ 即生效，发布出去的模组不依赖它。
+    val yaclFile = rootProject.file("libs/yet_another_config_lib_v3-3.9.4+26.1-fabric.jar")
+    if (yaclFile.exists()) {
+        implementation(files(yaclFile))
+    }
+
     implementation("me.fallenbreath:conditional-mixin-fabric:0.6.4")
 }
 
@@ -144,6 +150,9 @@ loom {
             ideConfigGenerated(true)
             vmArgs(commonVmArgs)
             programArgs(programArgs)
+            providers.environmentVariable("PRINTER_QUICKPLAY").orNull?.let {
+                programArgs("--quickPlayMultiplayer", it)
+            }
             runDir = if (project.name == "26.3") "../../run/client-26.3" else "../../run/client"
         }
     }

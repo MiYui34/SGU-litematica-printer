@@ -4,11 +4,6 @@
   "package": "me.aleksilassila.litematica.printer.mixin",
   "plugin": "me.aleksilassila.litematica.printer.mixin_plugin.ChestTrackerMixinConfigPlugin",
   "compatibilityLevel": "${compatibility_level}",
-  "mixins": [
-    "printer.mc.MixinBlockItem",
-    "printer.mc.MixinConnection",
-    "printer.mc.MixinServerboundMovePlayerPacket"
-  ],
   "client": [
     "MixinClientPacketListener",
     "MixinContainerScreenGuard",
@@ -16,10 +11,13 @@
     "MixinMinecraftMiningInput",
     "MixinMinecraftPickBlock",
     ${beacon_client_mixins}
+    "printer.mc.MixinBlockItem",
     "printer.mc.MixinClientLevel",
     "printer.mc.MixinClientPacketListener",
+    "printer.mc.MixinConnection",
     "printer.mc.MixinGui",
     "printer.mc.MixinLocalPlayer",
+    "printer.mc.MixinServerboundMovePlayerPacket",
     ${chesttracker_client_mixins}
     "printer.mc.MixinMultiPlayerGameMode"
   ],

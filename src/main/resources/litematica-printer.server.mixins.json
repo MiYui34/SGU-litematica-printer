@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "me.aleksilassila.litematica.printer.mixin",
+  "compatibilityLevel": "${compatibility_level}",
+  "mixins": [
+    "printer.server.MixinChestMenu",
+    "printer.server.MixinContainer",
+    "printer.server.MixinServerLevel",
+    "printer.server.MixinServerPlayer",
+    "printer.server.MixinServerPlayerGameMode"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

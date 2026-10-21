@@ -4,6 +4,7 @@ import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.core.action.ResourceLease;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeComponent;
 import me.aleksilassila.litematica.printer.core.runtime.RuntimeEvent;
+import me.aleksilassila.litematica.printer.network.client.RemoteContainerClient;
 import me.aleksilassila.litematica.printer.printer.action.ActionPort;
 import me.aleksilassila.litematica.printer.utils.InteractionUtils;
 import me.aleksilassila.litematica.printer.utils.InventoryUtils;
@@ -411,11 +412,14 @@ public final class ChestTrackerAdapter implements InventoryProvider, RuntimeComp
     private boolean openNextCandidate() {
         while (this.candidateIndex < this.candidates.size()) {
             Candidate candidate = this.candidates.get(this.candidateIndex++);
-            if (this.invalidCandidates.contains(candidate.pos()) || !this.client.level.isLoaded(candidate.pos())) continue;
-            if (open(candidate.pos())) {
+            if (this.invalidCandidates.contains(candidate.pos())) continue;
+            boolean remote = RemoteContainerClient.isAvailable()
+                    && RemoteContainerClient.needsRemoteOpen(candidate.pos());
+            if (!remote && !this.client.level.isLoaded(candidate.pos())) continue;
+            if (open(candidate.pos(), remote)) {
                 this.targetPos = candidate.pos();
                 this.phase = Phase.WAITING_CONTENT;
-                this.openDeadline = gameTick() + openTimeoutTicks();
+                this.openDeadline = gameTick() + (remote ? pendingTimeoutTicks() : openTimeoutTicks());
                 return true;
             }
             this.invalidCandidates.add(candidate.pos());
@@ -423,7 +427,29 @@ public final class ChestTrackerAdapter implements InventoryProvider, RuntimeComp
         return false;
     }
 
+    /**
+     * 服务端代开容器的结果。
+     *
+     * <p>成功时什么都不用做：服务端那次「使用」会让原版发出打开界面的包，界面到了自然会走
+     * {@link #onContainerOpen(int)}。失败则立刻把这个候选拉黑，换下一个，别干等到超时。</p>
+     */
+    public void onRemoteContainerResult(BlockPos pos, boolean opened) {
+        if (this.phase == Phase.IDLE || this.targetPos == null || !this.targetPos.equals(pos)) {
+            return;
+        }
+        if (opened) {
+            this.openDeadline = gameTick() + pendingTimeoutTicks();
+            return;
+        }
+        this.invalidCandidates.add(pos);
+        failAndContinue();
+    }
+
     private boolean open(BlockPos pos) {
+        return open(pos, RemoteContainerClient.isAvailable() && RemoteContainerClient.needsRemoteOpen(pos));
+    }
+
+    private boolean open(BlockPos pos, boolean remote) {
         if (this.client.player == null || this.client.level == null) return false;
         this.expectedContainerId = -1;
         if (!this.actionBroker.tryAcquire(LEASE_OWNER, EnumSet.of(ResourceLease.CONTAINER), 0L)) return false;
@@ -436,6 +462,9 @@ public final class ChestTrackerAdapter implements InventoryProvider, RuntimeComp
         this.dispatchAcquired = true;
         this.suppressContainerScreen = true;
         try {
+            if (remote) {
+                return RemoteContainerClient.request(pos);
+            }
             BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
             InteractionResult result = InteractionUtils.getRuntime().useItemOn(false, InteractionHand.MAIN_HAND, hit);
             return result != InteractionResult.FAIL;
