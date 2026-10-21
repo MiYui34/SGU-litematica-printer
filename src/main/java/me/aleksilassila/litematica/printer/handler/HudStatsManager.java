@@ -34,6 +34,7 @@ public final class HudStatsManager implements RuntimeComponent {
     private final PrintConfirmationTracker printConfirmationTracker = new PrintConfirmationTracker();
 
     private long lastFallbackFlushTick = Long.MIN_VALUE;
+    private int diagnosticLogBudget = 200;
 
     public HudStatsManager(
             Minecraft client,
@@ -139,12 +140,15 @@ public final class HudStatsManager implements RuntimeComponent {
         }
         long now = this.tickClock.getAsLong();
 
+        BlockState expectedState = this.printConfirmationTracker.expectedState(pos);
         PrintConfirmationTracker.Resolution printResolution =
                 this.printConfirmationTracker.resolve(pos, authoritativeState);
         if (printResolution == PrintConfirmationTracker.Resolution.MATCHED) {
             this.stats.get(Mode.PRINT).recordConfirmedUnit(now, 1);
         } else if (printResolution == PrintConfirmationTracker.Resolution.MISMATCHED
                 && this.client.level != null) {
+            this.logDiagnostic("placement landed as {} at {} (expected {})",
+                    authoritativeState, pos, expectedState);
             RuntimeAccess.get().cooldownUtils().removeCooldown(
                     this.client.level, "print", pos);
         }
@@ -183,8 +187,12 @@ public final class HudStatsManager implements RuntimeComponent {
     }
 
     private void flushExpiredPrintPlacements(Minecraft client, long now, int maxChecks) {
-        List<BlockPos> expired = this.printConfirmationTracker.expire(now, maxChecks);
-        for (BlockPos pos : expired) {
+        List<PrintConfirmationTracker.ExpiredPlacement> expired =
+                this.printConfirmationTracker.expire(now, maxChecks);
+        for (PrintConfirmationTracker.ExpiredPlacement placement : expired) {
+            BlockPos pos = placement.pos();
+            this.logDiagnostic("placement never confirmed at {}: expected {}, world has {}",
+                    pos, placement.expectedState(), client.level.getBlockState(pos));
             RuntimeAccess.get().scanEngine().invalidate(pos);
             // An expired entry means no block change ever arrived. Re-clicking immediately would
             // hit a block the server may already have placed (toggling doors, levers, chests and
@@ -193,6 +201,23 @@ public final class HudStatsManager implements RuntimeComponent {
             RuntimeAccess.get().cooldownUtils().setCooldown(
                     client.level, "print", pos,
                     Math.max(1, me.aleksilassila.litematica.printer.utils.ConfigUtils.getPlaceCooldown()));
+        }
+    }
+
+    /**
+     * Placement mismatches are logged so a report can be traced back to the exact block and the
+     * exact state the server ended up with. The budget keeps a broken print session from flooding
+     * the game log.
+     */
+    private void logDiagnostic(String message, Object... args) {
+        if (this.diagnosticLogBudget <= 0) {
+            return;
+        }
+        this.diagnosticLogBudget--;
+        me.aleksilassila.litematica.printer.Reference.LOGGER.warn("[print] " + message, args);
+        if (this.diagnosticLogBudget == 0) {
+            me.aleksilassila.litematica.printer.Reference.LOGGER.warn(
+                    "[print] further placement diagnostics suppressed for this session");
         }
     }
 

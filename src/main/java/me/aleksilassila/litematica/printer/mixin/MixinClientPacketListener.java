@@ -1,5 +1,6 @@
 package me.aleksilassila.litematica.printer.mixin;
 
+import me.aleksilassila.litematica.printer.runtime.ClientBlockUpdateRouter;
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
 import me.aleksilassila.litematica.printer.utils.mods.QuickShulkerBridge;
 import me.aleksilassila.litematica.printer.utils.minecraft.NetworkUtils;
@@ -88,6 +89,21 @@ public abstract class MixinClientPacketListener {
     @Inject(at = @At("TAIL"), method = "handleBlockUpdate")
     private void printer$logBlockReply(ClientboundBlockUpdatePacket packet, CallbackInfo ci) {
         QuickShulkerDiagnostics.blockReply(packet.getPos(), packet.getBlockState());
+    }
+
+    /**
+     * 数据包放置不发本地预测，所以 {@code ClientLevel.syncBlockState} 不会被调用
+     * （那是在 {@code BlockStatePredictionHandler.endPredictionsUpTo} 里走的路径）。
+     * 这里直接接住服务端的权威方块更新，否则「等待确认 / 命中状态 / 扫描缓存失效」在数据包模式下全部收不到。
+     */
+    @Inject(at = @At("TAIL"), method = "handleBlockUpdate")
+    private void printer$routeBlockUpdate(ClientboundBlockUpdatePacket packet, CallbackInfo ci) {
+        ClientBlockUpdateRouter.accept(packet.getPos(), packet.getBlockState());
+    }
+
+    @Inject(at = @At("TAIL"), method = "handleChunkBlocksUpdate")
+    private void printer$routeSectionBlockUpdate(ClientboundSectionBlocksUpdatePacket packet, CallbackInfo ci) {
+        packet.runUpdates(ClientBlockUpdateRouter::accept);
     }
 
     @Inject(at = @At("TAIL"), method = "handleChunkBlocksUpdate")

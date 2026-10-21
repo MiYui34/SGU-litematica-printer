@@ -2,6 +2,7 @@ package me.aleksilassila.litematica.printer.handler;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -36,6 +37,12 @@ final class PrintConfirmationTracker {
         return true;
     }
 
+    @Nullable
+    BlockState expectedState(BlockPos pos) {
+        PendingBlockState pending = this.pendingStates.get(pos);
+        return pending == null ? null : pending.expectedState();
+    }
+
     Resolution resolve(BlockPos pos, BlockState authoritativeState) {
         PendingBlockState pending = this.pendingStates.remove(pos);
         if (pending == null) {
@@ -46,15 +53,15 @@ final class PrintConfirmationTracker {
                 : Resolution.MISMATCHED;
     }
 
-    List<BlockPos> expire(long currentTick, int maxChecks) {
-        List<BlockPos> expired = new ArrayList<>();
+    List<ExpiredPlacement> expire(long currentTick, int maxChecks) {
+        List<ExpiredPlacement> expired = new ArrayList<>();
         for (int checked = 0; checked < maxChecks && !this.pendingStates.isEmpty(); checked++) {
             Iterator<Map.Entry<BlockPos, PendingBlockState>> iterator =
                     this.pendingStates.entrySet().iterator();
             Map.Entry<BlockPos, PendingBlockState> entry = iterator.next();
             iterator.remove();
             if (currentTick > entry.getValue().expireTick()) {
-                expired.add(entry.getKey());
+                expired.add(new ExpiredPlacement(entry.getKey(), entry.getValue().expectedState()));
             } else {
                 this.pendingStates.put(entry.getKey(), entry.getValue());
             }
@@ -64,6 +71,9 @@ final class PrintConfirmationTracker {
 
     void clear() {
         this.pendingStates.clear();
+    }
+
+    record ExpiredPlacement(BlockPos pos, BlockState expectedState) {
     }
 
     enum Resolution {
