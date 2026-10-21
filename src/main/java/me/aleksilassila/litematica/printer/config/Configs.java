@@ -243,6 +243,11 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 .defaultValue(true)
                 .build();
 
+        // 数据包放置：关闭本地预测，直接发送 ServerboundUseItemOnPacket（对应 SGU 的 placeUsePacket）
+        public static final ConfigBoolean PRINT_USE_PACKET = bool("placeUsePacket")
+                .defaultValue(false)
+                .build();
+
         // 快捷潜影盒 - 开关
         public static final ConfigBoolean QUICK_SHULKER = bool("quickShulker")
                 .defaultValue(false)
@@ -270,7 +275,8 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 PLACE_COOLDOWN,
                 RTT_ADAPTIVE_INTERVAL,
                 RTT_SAFETY_PERCENT,
-                FALLING_CHECK
+                FALLING_CHECK,
+                PRINT_USE_PACKET
         );
     }
 
@@ -289,6 +295,11 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
 
         // Optional modern delayed confirmation. The legacy same-tick START+STOP exploit is never used.
         public static final ConfigBoolean BREAK_USE_DELAYED_DESTROY = bool("breakUseDelayedDestroy")
+                .defaultValue(false)
+                .build();
+
+        // 数据包破坏：关闭本地预测，直接发送 ServerboundPlayerActionPacket（对应 SGU 的 breakUsePacket）
+        public static final ConfigBoolean BREAK_USE_PACKET = bool("breakUsePacket")
                 .defaultValue(false)
                 .build();
 
@@ -352,6 +363,7 @@ public class Configs extends ConfigBuilders implements IConfigHandler {
                 BREAK_INTERVAL,
                 BREAK_BLOCKS_PER_TICK,
                 BREAK_USE_DELAYED_DESTROY,
+                BREAK_USE_PACKET,
                 BREAK_PROGRESS_THRESHOLD,
                 BREAK_COOLDOWN,
                 BREAK_CHECK_HARDNESS,

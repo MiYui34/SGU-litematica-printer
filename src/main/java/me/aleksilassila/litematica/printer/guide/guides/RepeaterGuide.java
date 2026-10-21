@@ -1,10 +1,12 @@
 package me.aleksilassila.litematica.printer.guide.guides;
 
+import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.enums.BlockMatchResult;
 import me.aleksilassila.litematica.printer.guide.Guide;
 import me.aleksilassila.litematica.printer.guide.Result;
 import me.aleksilassila.litematica.printer.printer.SchematicBlockContext;
 import me.aleksilassila.litematica.printer.printer.action.ClickAction;
+import me.aleksilassila.litematica.printer.utils.InteractionUtils;
 import net.minecraft.world.level.block.RepeaterBlock;
 
 /**
@@ -20,6 +22,13 @@ public class RepeaterGuide extends Guide {
     protected Result onBuildActionWrongState(BlockMatchResult state) {
         if (!getProperty(requiredState, RepeaterBlock.DELAY).equals(getProperty(currentState, RepeaterBlock.DELAY))) {
             return Result.success(new ClickAction());
+        }
+        if (Configs.Print.BREAK_WRONG_STATE_BLOCK.getBooleanValue()
+                && getProperty(requiredState, RepeaterBlock.POWERED).equals(getProperty(currentState, RepeaterBlock.POWERED))
+                && getProperty(requiredState, RepeaterBlock.LOCKED).equals(getProperty(currentState, RepeaterBlock.LOCKED))) {
+            if (InteractionUtils.canBreakBlock(blockPos) && InteractionUtils.breakRestriction(currentState)) {
+                InteractionUtils.getRuntime().add(context);
+            }
         }
         return Result.SKIP;
     }

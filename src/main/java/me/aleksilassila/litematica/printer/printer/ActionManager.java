@@ -224,7 +224,7 @@ public class ActionManager {
                 me.aleksilassila.litematica.printer.integration.quickshulker.QuickShulkerDiagnostics.placement(
                         player, click.target, click.side, click.expectedItems);
                 boolean interactionAccepted = gameModeExtension.litematica_printer$useItemOn(
-                        true,
+                        !Configs.Placement.PRINT_USE_PACKET.getBooleanValue(),
                         InteractionHand.MAIN_HAND,
                         blockHitResult
                 ) != net.minecraft.world.InteractionResult.FAIL;

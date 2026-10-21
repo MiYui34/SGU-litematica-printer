@@ -1,5 +1,6 @@
 package me.aleksilassila.litematica.printer.guide.guides;
 
+import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.enums.BlockMatchResult;
 import me.aleksilassila.litematica.printer.guide.Guide;
 import me.aleksilassila.litematica.printer.guide.Result;
@@ -7,6 +8,7 @@ import me.aleksilassila.litematica.printer.printer.PrinterUtils;
 import me.aleksilassila.litematica.printer.printer.SchematicBlockContext;
 import me.aleksilassila.litematica.printer.printer.action.Action;
 import me.aleksilassila.litematica.printer.printer.action.ClickAction;
+import me.aleksilassila.litematica.printer.utils.InteractionUtils;
 import me.aleksilassila.litematica.printer.utils.minecraft.DirectionUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -90,6 +92,13 @@ public class SlabGuide extends Guide {
                 return Result.success(new ClickAction()
                         .setSides(clickFace)
                         .setItem(requiredBlock.asItem()));
+            }
+        }
+
+        // 台阶类型不一致且无法合并 → 根据配置决定是否破坏
+        if (Configs.Print.BREAK_WRONG_STATE_BLOCK.getBooleanValue()) {
+            if (InteractionUtils.canBreakBlock(blockPos) && InteractionUtils.breakRestriction(currentState)) {
+                InteractionUtils.getRuntime().add(context);
             }
         }
 

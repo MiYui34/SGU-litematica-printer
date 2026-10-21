@@ -3,6 +3,7 @@ package me.aleksilassila.litematica.printer.utils;
 import fi.dy.masa.litematica.util.EntityUtils;
 import fi.dy.masa.malilib.gui.Message;
 import fi.dy.masa.malilib.util.InfoUtils;
+import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.mixin.printer.litematica.EasyPlaceUtilsAccessor;
 import me.aleksilassila.litematica.printer.mixin.printer.litematica.InventoryUtilsAccessor;
 import me.aleksilassila.litematica.printer.integration.inventory.MaterialRequest;
@@ -20,12 +21,14 @@ import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import me.aleksilassila.litematica.printer.runtime.RuntimeAccess;
@@ -204,15 +207,20 @@ public class InventoryUtils {
         }
 
         int slot = findSlotWithItem(player.inventoryMenu, stackReference, true);
-        if (slot != -1) {
-            if (client.gameMode == null) {
-                return false;
-            }
-            int currentHotbarSlot = getSelectedSlot(player.getInventory());
-            client.gameMode.handleContainerInput(player.inventoryMenu.containerId, slot, currentHotbarSlot, ContainerInput.SWAP, player);
-            return true;
+        if (slot == -1) {
+            return false;
         }
-        return false;
+
+        int currentHotbarSlot = getSelectedSlot(player.getInventory());
+        if (Configs.Placement.PRINT_USE_PACKET.getBooleanValue()) {
+            return InventoryPacketSwap.swapWithSelectedHotbarSlot(player, slot, currentHotbarSlot);
+        }
+        if (client.gameMode == null) {
+            return false;
+        }
+        client.gameMode.handleContainerInput(
+                player.inventoryMenu.containerId, slot, currentHotbarSlot, ContainerInput.SWAP, player);
+        return true;
     }
 
     /**

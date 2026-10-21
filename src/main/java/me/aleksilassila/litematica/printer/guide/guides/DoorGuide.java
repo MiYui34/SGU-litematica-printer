@@ -1,11 +1,13 @@
 package me.aleksilassila.litematica.printer.guide.guides;
 
+import me.aleksilassila.litematica.printer.config.Configs;
 import me.aleksilassila.litematica.printer.enums.BlockMatchResult;
 import me.aleksilassila.litematica.printer.guide.Guide;
 import me.aleksilassila.litematica.printer.guide.Result;
 import me.aleksilassila.litematica.printer.printer.SchematicBlockContext;
 import me.aleksilassila.litematica.printer.printer.action.Action;
 import me.aleksilassila.litematica.printer.printer.action.ClickAction;
+import me.aleksilassila.litematica.printer.utils.InteractionUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Blocks;
@@ -98,6 +100,17 @@ public class DoorGuide extends Guide {
         // 开关状态不一致 → 右键点击切换
         if (!getProperty(requiredState, BlockStateProperties.OPEN).equals(getProperty(currentState, BlockStateProperties.OPEN))) {
             return Result.success(new ClickAction());
+        }
+        // 朝向不一致 → 根据配置决定是否破坏
+        Direction facing = getProperty(requiredState, DoorBlock.FACING).orElse(null);
+        if (Configs.Print.BREAK_WRONG_STATE_BLOCK.getBooleanValue()
+                && facing != null
+                && facing != getProperty(currentState, BlockStateProperties.FACING)
+                .or(() -> getProperty(currentState, BlockStateProperties.HORIZONTAL_FACING))
+                .orElse(null)) {
+            if (InteractionUtils.canBreakBlock(blockPos) && InteractionUtils.breakRestriction(currentState)) {
+                InteractionUtils.getRuntime().add(context);
+            }
         }
         return Result.SKIP;
     }

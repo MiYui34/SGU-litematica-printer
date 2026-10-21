@@ -225,7 +225,7 @@ public final class InteractionUtils implements RuntimeComponent {
     }
 
     public BlockBreakResult continueDestroyBlock(BlockPos blockPos, Direction direction) {
-        return this.continueDestroyBlock(blockPos, direction, true);
+        return this.continueDestroyBlock(blockPos, direction, !Configs.Break.BREAK_USE_PACKET.getBooleanValue());
     }
 
     public BlockBreakResult continueDestroyBlock(BlockPos blockPos) {
@@ -254,7 +254,7 @@ public final class InteractionUtils implements RuntimeComponent {
     }
 
     public BlockBreakResult continueDestroyBlockWithoutTracking(BlockPos blockPos, Direction direction) {
-        return this.continueDestroyBlock(blockPos, direction, true, false);
+        return this.continueDestroyBlock(blockPos, direction, !Configs.Break.BREAK_USE_PACKET.getBooleanValue(), false);
     }
 
     public BlockBreakResult continueDestroyBlockWithoutTracking(BlockPos blockPos) {
@@ -267,7 +267,7 @@ public final class InteractionUtils implements RuntimeComponent {
             return BlockBreakResult.FAILED;
         }
         BlockBreakResult result = gameMode.litematica_printer$continueDestroyBlock(
-                true,
+                !Configs.Break.BREAK_USE_PACKET.getBooleanValue(),
                 blockPos,
                 direction,
                 this.breakState.forceDelayedDestroy(),
